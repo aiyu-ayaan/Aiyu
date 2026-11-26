@@ -61,19 +61,6 @@ export default function AdminBlogsPage() {
     const sentinelRef = React.useRef(null);
     const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-    const requestSort = (key) => {
-        let direction = 'asc';
-        if (sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
-            setSortConfig({ key: null, direction: 'desc' });
-            setPage(1);
-            return;
-        }
-        setSortConfig({ key, direction });
-        setPage(1);
-    };
-
     const [filterTab, setFilterTab] = useState('all');
 
     const sortedBlogs = useMemo(() => {
@@ -87,27 +74,6 @@ export default function AdminBlogsPage() {
             return title.includes(q) || slug.includes(q) || tags.includes(q) || reason.includes(q);
         });
     }, [blogs, searchQuery]);
-
-    const renderSortableHeader = (label, sortKey) => {
-        const isSorted = sortConfig.key === sortKey;
-        return (
-            <th scope="col">
-                <button
-                    type="button"
-                    onClick={() => requestSort(sortKey)}
-                    data-active={isSorted}
-                    className="adm-sort-btn"
-                >
-                    <span>{label}</span>
-                    {isSorted && (
-                        sortConfig.direction === 'desc'
-                            ? <FaArrowDown aria-hidden="true" className="w-3 h-3" />
-                            : <FaArrowUp aria-hidden="true" className="w-3 h-3" />
-                    )}
-                </button>
-            </th>
-        );
-    };
 
     useEffect(() => {
         fetchBlogs(page, filterTab, sortConfig);
@@ -278,11 +244,10 @@ export default function AdminBlogsPage() {
                 flush
             >
                 <div className="adm-toolbar">
-                    <div className="adm-tabs border-b-0" role="tablist" aria-label="Filter posts by status">
+                    <div className="adm-tabs border-b-0" role="group" aria-label="Filter posts by status">
                         <button
                             type="button"
-                            role="tab"
-                            aria-selected={filterTab === 'all'}
+                            aria-pressed={filterTab === 'all'}
                             onClick={() => changeFilterTab('all')}
                             className="adm-tab"
                         >
@@ -290,8 +255,7 @@ export default function AdminBlogsPage() {
                         </button>
                         <button
                             type="button"
-                            role="tab"
-                            aria-selected={filterTab === 'active'}
+                            aria-pressed={filterTab === 'active'}
                             onClick={() => changeFilterTab('active')}
                             className="adm-tab"
                         >
@@ -299,8 +263,7 @@ export default function AdminBlogsPage() {
                         </button>
                         <button
                             type="button"
-                            role="tab"
-                            aria-selected={filterTab === 'ceased'}
+                            aria-pressed={filterTab === 'ceased'}
                             onClick={() => changeFilterTab('ceased')}
                             className="adm-tab"
                         >
@@ -308,8 +271,7 @@ export default function AdminBlogsPage() {
                         </button>
                         <button
                             type="button"
-                            role="tab"
-                            aria-selected={filterTab === 'flagged'}
+                            aria-pressed={filterTab === 'flagged'}
                             onClick={() => changeFilterTab('flagged')}
                             className="adm-tab"
                         >
@@ -326,8 +288,55 @@ export default function AdminBlogsPage() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Filter loaded posts by title or tag..."
                             aria-label="Filter loaded posts"
-                            className="adm-input adm-search-input"
+                            className="adm-input adm-search-input pr-12"
                         />
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery('')}
+                                className="adm-icon-btn absolute right-1 top-1/2 min-h-11 min-w-11 -translate-y-1/2"
+                                aria-label="Clear post search"
+                                title="Clear search"
+                            >
+                                <FaXmark aria-hidden="true" />
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <label htmlFor="blog-sort" className="adm-help">Sort by</label>
+                        <select
+                            id="blog-sort"
+                            value={sortConfig.key || ''}
+                            onChange={(event) => {
+                                const key = event.target.value || null;
+                                setSortConfig({ key, direction: key ? 'asc' : 'desc' });
+                                setPage(1);
+                            }}
+                            className="adm-input min-w-36"
+                        >
+                            <option value="">Default order</option>
+                            <option value="title">Title</option>
+                            <option value="date">Date</option>
+                            <option value="views">Views</option>
+                            <option value="published">Status</option>
+                        </select>
+                        <button
+                            type="button"
+                            onClick={() => setSortConfig((current) => ({
+                                ...current,
+                                direction: current.direction === 'asc' ? 'desc' : 'asc',
+                            }))}
+                            disabled={!sortConfig.key}
+                            aria-label={`Sort ${sortConfig.direction === 'asc' ? 'descending' : 'ascending'}`}
+                            className="adm-btn"
+                        >
+                            {sortConfig.direction === 'asc' ? (
+                                <FaArrowUp aria-hidden="true" />
+                            ) : (
+                                <FaArrowDown aria-hidden="true" />
+                            )}
+                            {sortConfig.direction === 'asc' ? 'Ascending' : 'Descending'}
+                        </button>
                     </div>
                 </div>
 
@@ -354,124 +363,106 @@ export default function AdminBlogsPage() {
                         }
                     />
                 ) : (
-                    <div className={`adm-table-wrap transition-opacity ${loading && hasLoadedOnce ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <table className="adm-table">
-                            <thead>
-                                <tr>
-                                    {renderSortableHeader('Post', 'title')}
-                                    {renderSortableHeader('Date', 'date')}
-                                    {renderSortableHeader('Views', 'views')}
-                                    {renderSortableHeader('Status', 'published')}
-                                    <th scope="col" className="text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {sortedBlogs.map((blog) => {
-                                    const isFlagged = blog.isFlagged || blog.reviewStatus === 'FLAGGED';
-                                    const isPublished = blog.published !== false;
-                                    const tags = Array.isArray(blog.tags) ? blog.tags.slice(0, 3) : [];
-                                    return (
-                                        <tr key={blog._id}>
-                                            <td>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="adm-thumb" aria-hidden="true">
-                                                        {blog.image ? (
-                                                            <img src={blog.image} alt="" loading="lazy" />
-                                                        ) : (
-                                                            <FaFileLines className="w-4 h-4" />
-                                                        )}
-                                                    </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <Link
-                                                            href={`/admin/blogs/${blog._id}`}
-                                                            className="font-semibold text-[var(--text-bright)] hover:text-[var(--adm-accent-ink)] block truncate"
-                                                            title={blog.title}
-                                                        >
-                                                            {blog.title}
-                                                        </Link>
-                                                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                                            {blog.readTime && (
-                                                                <span className="adm-help font-mono">{blog.readTime}</span>
-                                                            )}
-                                                            {tags.map((tag) => (
-                                                                <Badge key={tag}>{tag}</Badge>
-                                                            ))}
-                                                            {isFlagged && blog.flagReason && (
-                                                                <Badge tone="error" title={blog.flagReason}>
-                                                                    Reason: {blog.flagReason}
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="adm-num whitespace-nowrap text-[var(--text-secondary)]">
-                                                {formatBlogTimestamp(blog)}
-                                            </td>
-                                            <td className="adm-num whitespace-nowrap">
-                                                {blog.views != null ? blog.views.toLocaleString() : '0'}
-                                            </td>
-                                            <td className="whitespace-nowrap">
-                                                {isFlagged ? (
-                                                    <Badge tone="error">Flagged for review</Badge>
-                                                ) : isPublished ? (
-                                                    <Badge tone="ok">Published</Badge>
+                    <div className={`transition-opacity ${loading && hasLoadedOnce ? 'pointer-events-none opacity-50' : ''}`}>
+                        <ul className="adm-list" aria-label="Blog posts">
+                            {sortedBlogs.map((blog) => {
+                                const isFlagged = blog.isFlagged || blog.reviewStatus === 'FLAGGED';
+                                const isPublished = blog.published !== false;
+                                const tags = Array.isArray(blog.tags) ? blog.tags.slice(0, 3) : [];
+                                return (
+                                    <li key={blog._id} className="adm-row flex-wrap justify-between gap-3 py-3.5">
+                                        <div className="flex min-w-0 flex-1 basis-64 items-start gap-3">
+                                            <div className="adm-thumb mt-0.5" aria-hidden="true">
+                                                {blog.image ? (
+                                                    <img src={blog.image} alt="" loading="lazy" />
                                                 ) : (
-                                                    <Badge tone="warn">Draft</Badge>
+                                                    <FaFileLines className="w-4 h-4" />
                                                 )}
-                                            </td>
-                                            <td>
-                                                <div className="flex items-center justify-end gap-1.5">
-                                                    {isFlagged ? (
-                                                        <>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => approveBlog(blog._id, true)}
-                                                                className="adm-btn"
-                                                            >
-                                                                <FaCheck aria-hidden="true" /> Approve &amp; publish
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => approveBlog(blog._id, false)}
-                                                                className="adm-btn adm-btn-quiet"
-                                                            >
-                                                                <FaXmark aria-hidden="true" /> Dismiss flag
-                                                            </button>
-                                                        </>
-                                                    ) : (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => togglePublish(blog._id, isPublished)}
-                                                            className="adm-btn"
-                                                        >
-                                                            {isPublished ? 'Unpublish' : 'Publish'}
-                                                        </button>
-                                                    )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
                                                     <Link
                                                         href={`/admin/blogs/${blog._id}`}
-                                                        className="adm-icon-btn"
-                                                        aria-label={`Edit ${blog.title}`}
-                                                        title="Edit post"
+                                                        className="truncate font-semibold text-[var(--text-bright)] hover:text-[var(--adm-accent-ink)]"
+                                                        title={blog.title}
                                                     >
-                                                        <FaPen className="w-3.5 h-3.5" />
+                                                        {blog.title}
                                                     </Link>
+                                                    {isFlagged ? (
+                                                        <Badge tone="error">Flagged for review</Badge>
+                                                    ) : isPublished ? (
+                                                        <Badge tone="ok">Published</Badge>
+                                                    ) : (
+                                                        <Badge tone="warn">Draft</Badge>
+                                                    )}
+                                                </div>
+                                                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                                    {blog.readTime && <span className="adm-help font-mono">{blog.readTime}</span>}
+                                                    {tags.map((tag) => <Badge key={tag}>{tag}</Badge>)}
+                                                    {isFlagged && blog.flagReason && (
+                                                        <Badge tone="error" title={blog.flagReason}>
+                                                            Reason: {blog.flagReason}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-2 text-sm text-[var(--text-secondary)]">
+                                            <span className="adm-num">{formatBlogTimestamp(blog)}</span>
+                                            <Badge title="Views">
+                                                <span className="sr-only">Views: </span>
+                                                {blog.views != null ? blog.views.toLocaleString() : '0'} views
+                                            </Badge>
+                                        </div>
+                                        <div className="flex w-full flex-wrap justify-end gap-1.5 sm:w-auto">
+                                            {isFlagged ? (
+                                                <>
                                                     <button
                                                         type="button"
-                                                        onClick={() => deleteBlog(blog._id)}
-                                                        className="adm-icon-btn"
-                                                        aria-label={`Delete ${blog.title}`}
-                                                        title="Delete post"
+                                                        onClick={() => approveBlog(blog._id, true)}
+                                                        className="adm-btn min-h-11"
                                                     >
-                                                        <FaTrash className="w-3.5 h-3.5" />
+                                                        <FaCheck aria-hidden="true" /> Approve &amp; publish
                                                     </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => approveBlog(blog._id, false)}
+                                                        className="adm-btn adm-btn-quiet min-h-11"
+                                                    >
+                                                        <FaXmark aria-hidden="true" /> Dismiss flag
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => togglePublish(blog._id, isPublished)}
+                                                    className="adm-btn min-h-11"
+                                                >
+                                                    {isPublished ? 'Unpublish' : 'Publish'}
+                                                </button>
+                                            )}
+                                            <Link
+                                                href={`/admin/blogs/${blog._id}`}
+                                                className="adm-icon-btn min-h-11 min-w-11"
+                                                aria-label={`Edit ${blog.title}`}
+                                                title="Edit post"
+                                            >
+                                                <FaPen aria-hidden="true" className="w-3.5 h-3.5" />
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                onClick={() => deleteBlog(blog._id)}
+                                                className="adm-icon-btn min-h-11 min-w-11"
+                                                aria-label={`Delete ${blog.title}`}
+                                                title="Delete post"
+                                            >
+                                                <FaTrash aria-hidden="true" className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
                     </div>
                 )}
 

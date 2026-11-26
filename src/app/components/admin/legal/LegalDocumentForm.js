@@ -98,13 +98,11 @@ export default function LegalDocumentForm({ app, initialData = null, defaultKind
                     title="Document content"
                     actions={
                         <div className="flex flex-wrap items-center gap-3">
-                            <div className="adm-tabs border-b-0" role="radiogroup" aria-label="Content format">
+                            <div className="adm-tabs border-b-0" role="group" aria-label="Content format">
                                 {FORMAT_OPTIONS.map((opt) => (
                                     <button
                                         key={opt.value}
                                         type="button"
-                                        role="radio"
-                                        aria-checked={form.format === opt.value}
                                         aria-pressed={form.format === opt.value}
                                         onClick={() => set('format', opt.value)}
                                         className="adm-tab"
@@ -113,11 +111,10 @@ export default function LegalDocumentForm({ app, initialData = null, defaultKind
                                     </button>
                                 ))}
                             </div>
-                            <div className="adm-tabs border-b-0" role="tablist" aria-label="Editor view mode">
+                            <div className="adm-tabs border-b-0" role="group" aria-label="Editor view mode">
                                 <button
                                     type="button"
-                                    role="tab"
-                                    aria-selected={tab === 'write'}
+                                    aria-pressed={tab === 'write'}
                                     onClick={() => setTab('write')}
                                     className="adm-tab"
                                 >
@@ -125,8 +122,7 @@ export default function LegalDocumentForm({ app, initialData = null, defaultKind
                                 </button>
                                 <button
                                     type="button"
-                                    role="tab"
-                                    aria-selected={tab === 'preview'}
+                                    aria-pressed={tab === 'preview'}
                                     onClick={() => setTab('preview')}
                                     className="adm-tab"
                                 >

@@ -20,7 +20,7 @@ export default function EditLegalDocumentPage() {
 
     if (loading) {
         return (
-            <div className="adm-page">
+            <div className="adm-page adm-page-wide">
                 <PageHeader command="vim" title="Edit legal page" description="Loading document..." />
                 <Panel>
                     <Loading label="Loading legal page" rows={5} />
@@ -31,7 +31,7 @@ export default function EditLegalDocumentPage() {
 
     if (!doc || doc.appId !== id) {
         return (
-            <div className="adm-page">
+            <div className="adm-page adm-page-wide">
                 <PageHeader
                     command="vim"
                     title="Legal page not found"

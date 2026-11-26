@@ -12,7 +12,7 @@ import {
     FaArrowUpRightFromSquare,
 } from 'react-icons/fa6';
 import MarkdownToolbar from '@/app/components/admin/MarkdownToolbar';
-import Toast from '@/app/components/admin/Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { PageHeader, Panel, Badge, Loading, Field } from '@/app/components/admin/ui';
 import '@/app/styles/admin-blogs.css';
 
@@ -86,16 +86,14 @@ const defaultFormState = {
 
 export default function BlogEditorForm({ mode = 'create', blogId = null }) {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const contentRef = useRef(null);
-    const coverInputRef = useRef(null);
-    const socialInputRef = useRef(null);
 
     const isEditMode = mode === 'edit';
     const [loading, setLoading] = useState(isEditMode);
     const [submitting, setSubmitting] = useState(false);
     const [uploadingField, setUploadingField] = useState('');
     const [formData, setFormData] = useState(defaultFormState);
-    const [notification, setNotification] = useState(null);
     const [advancedOpen, setAdvancedOpen] = useState(false);
     const [aiEnabled, setAiEnabled] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
@@ -104,8 +102,11 @@ export default function BlogEditorForm({ mode = 'create', blogId = null }) {
     const [showAiPreview, setShowAiPreview] = useState(false);
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        if (success) {
+            toast.success(message);
+        } else {
+            toast.error(message);
+        }
     };
 
     useEffect(() => {
@@ -373,7 +374,7 @@ export default function BlogEditorForm({ mode = 'create', blogId = null }) {
 
     if (loading) {
         return (
-            <div className="adm-page">
+            <div className="adm-page adm-page-wide">
                 <PageHeader
                     command="vim"
                     title={isEditMode ? 'Edit post' : 'New post'}
@@ -387,7 +388,7 @@ export default function BlogEditorForm({ mode = 'create', blogId = null }) {
     }
 
     return (
-        <div className="adm-page">
+        <div className="adm-page adm-page-wide">
             <PageHeader
                 command={isEditMode ? 'vim' : 'touch'}
                 title={isEditMode ? 'Edit post' : 'New post'}
@@ -667,23 +668,21 @@ export default function BlogEditorForm({ mode = 'create', blogId = null }) {
                                             />
                                         </Field>
 
-                                        <div className="flex flex-wrap items-center gap-2">
+                                        <label className="adm-blog-upload">
                                             <input
-                                                ref={socialInputRef}
                                                 type="file"
                                                 accept="image/*,.heic,.heif"
-                                                className="hidden"
+                                                className="sr-only"
+                                                disabled={Boolean(uploadingField)}
+                                                aria-label="Upload social image"
                                                 onChange={(event) => uploadImage(event.target.files?.[0], 'socialImage')}
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => socialInputRef.current?.click()}
-                                                className="adm-btn"
-                                            >
-                                                <FaUpload aria-hidden="true" />
-                                                {uploadingField === 'socialImage' ? 'Uploading...' : 'Upload social image'}
-                                            </button>
-                                        </div>
+                                            <FaUpload aria-hidden="true" />
+                                            <span className="font-semibold">
+                                                {uploadingField === 'socialImage' ? 'Uploading social image...' : 'Choose social image'}
+                                            </span>
+                                            <span className="adm-help">Select an image file from this device.</span>
+                                        </label>
 
                                         {hasSocialImage && (
                                             <div className="adm-cover-preview p-2 space-y-2">
@@ -853,22 +852,22 @@ export default function BlogEditorForm({ mode = 'create', blogId = null }) {
                                 />
                             </Field>
 
-                            <div className="flex flex-wrap gap-2">
-                                <input
-                                    ref={coverInputRef}
-                                    type="file"
-                                    accept="image/*,.heic,.heif"
-                                    className="hidden"
-                                    onChange={(event) => uploadImage(event.target.files?.[0], 'image')}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => coverInputRef.current?.click()}
-                                    className="adm-btn w-full"
-                                >
+                            <div>
+                                <label className="adm-blog-upload">
+                                    <input
+                                        type="file"
+                                        accept="image/*,.heic,.heif"
+                                        className="sr-only"
+                                        disabled={Boolean(uploadingField)}
+                                        aria-label="Upload cover image"
+                                        onChange={(event) => uploadImage(event.target.files?.[0], 'image')}
+                                    />
                                     <FaUpload aria-hidden="true" />
-                                    {uploadingField === 'image' ? 'Uploading...' : 'Upload cover image'}
-                                </button>
+                                    <span className="font-semibold">
+                                        {uploadingField === 'image' ? 'Uploading cover image...' : 'Choose cover image'}
+                                    </span>
+                                    <span className="adm-help">Select an image file from this device.</span>
+                                </label>
                             </div>
 
                             {hasCoverImage && (
@@ -915,7 +914,6 @@ export default function BlogEditorForm({ mode = 'create', blogId = null }) {
                 </aside>
             </form>
 
-            <Toast notification={notification} onClose={() => setNotification(null)} />
         </div>
     );
 }

@@ -4,15 +4,15 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FaArrowLeft, FaCheck, FaArrowUpRightFromSquare, FaPlus, FaCode } from 'react-icons/fa6';
-import Toast from '@/app/components/admin/Toast';
+import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { PageHeader, Panel, Badge, Loading, Field } from '@/app/components/admin/ui';
 import '@/app/styles/admin-blogs.css';
 
 export default function BlogConfigPage() {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [toast, setToast] = useState(null);
     const [config, setConfig] = useState({
         blogsTitle: 'Latest Insights',
         blogsSubtitle: 'Thoughts, tutorials, and updates on web development and technology.',
@@ -24,8 +24,11 @@ export default function BlogConfigPage() {
     });
 
     const showToast = (message, success = true) => {
-        setToast({ message, success });
-        setTimeout(() => setToast(null), 3000);
+        if (success) {
+            toast.success(message);
+        } else {
+            toast.error(message);
+        }
     };
 
     useEffect(() => {
@@ -300,8 +303,6 @@ export default function BlogConfigPage() {
                     </aside>
                 </form>
             )}
-
-            <Toast notification={toast} onClose={() => setToast(null)} />
         </div>
     );
 }

@@ -24,7 +24,7 @@ function NewLegalDocument() {
 
     if (loading) {
         return (
-            <div className="adm-page">
+            <div className="adm-page adm-page-wide">
                 <PageHeader command="touch" title="New legal page" description="Loading application context..." />
                 <Panel>
                     <Loading label="Loading legal editor" rows={5} />
@@ -35,7 +35,7 @@ function NewLegalDocument() {
 
     if (!app) {
         return (
-            <div className="adm-page">
+            <div className="adm-page adm-page-wide">
                 <PageHeader
                     command="touch"
                     title="Legal application not found"

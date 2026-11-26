@@ -11,6 +11,7 @@ import {
     FaMagnifyingGlass,
     FaShieldHalved,
     FaPen,
+    FaXmark,
 } from 'react-icons/fa6';
 import { PageHeader, Panel, Stat, Badge, EmptyState, Loading } from '@/app/components/admin/ui';
 import '@/app/styles/admin-blogs.css';
@@ -90,7 +91,7 @@ export default function AdminLegalPage() {
 
             <Panel
                 title="Legal applications"
-                actions={<Badge tone="info">{apps.length} total</Badge>}
+                actions={<Badge tone="info">{filteredApps.length} shown</Badge>}
                 flush
             >
                 {apps.length > 0 && (
@@ -103,8 +104,19 @@ export default function AdminLegalPage() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search by app name, slug, package, or page..."
                                 aria-label="Search legal applications"
-                                className="adm-input adm-search-input"
+                                className="adm-input adm-search-input pr-12"
                             />
+                            {searchQuery && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearchQuery('')}
+                                    className="adm-icon-btn absolute right-1 top-1/2 min-h-11 min-w-11 -translate-y-1/2"
+                                    aria-label="Clear legal application search"
+                                    title="Clear search"
+                                >
+                                    <FaXmark aria-hidden="true" />
+                                </button>
+                            )}
                         </div>
                         <span className="adm-help adm-num">
                             Showing {filteredApps.length} of {apps.length} applications

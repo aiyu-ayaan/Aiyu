@@ -196,6 +196,39 @@
     object-fit: cover;
   }
 
+  .adm-blog-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 7rem;
+    padding: 1rem;
+    border: 1px dashed var(--hairline-strong);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .adm-blog-upload:hover,
+  .adm-blog-upload:focus-within {
+    border-color: var(--accent-cyan);
+    background: color-mix(in srgb, var(--accent-cyan) 8%, transparent);
+  }
+
+  .adm-blog-upload:focus-within {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+  }
+
+  .adm-blog-upload:has(input:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   /* Legal document live preview surface */
   .adm-legal-preview {
     min-height: 28rem;

@@ -94,31 +94,35 @@ Branch `migrate/rust-vite`. Visual + markup pass only — no logic, no fetch URL
 
 ---
 
-## Group 3 — Blogs & legal ⬜ not started
+## Group 3 — Blogs & legal ✅ done
 
 | File | Lines | CSS import | `Toast` legacy | Status |
 |---|---|---|---|---|
-| `_admin/blogs/page.js` | 488 | `admin-blogs.css` ✅ | — | ⬜ not started |
-| `_admin/blogs/[id]/page.js` | 10 | — | — | ⬜ not started |
-| `_admin/blogs/new/page.js` | 6 | — | — | ⬜ not started |
-| `_admin/blogs/config/page.js` | 307 | — (missing!) | — | ⬜ not started |
-| `_admin/legal/page.js` | 226 | `admin-blogs.css` ✅ | — | ⬜ not started |
-| `_admin/legal/[id]/page.js` | 262 | — | — | ⬜ not started |
-| `_admin/legal/[id]/pages/[docId]/page.js` | — | — | — | ⬜ not started |
-| `_admin/legal/new/page.js` | — | — | — | ⬜ not started |
-| `components/admin/BlogEditorForm.js` | 921 | — | — | ⬜ not started |
-| `components/admin/legal/*` | — | — | — | ⬜ not started |
+| `_admin/blogs/page.js` | 479 | `admin-blogs.css` ✅ | — | ✅ done |
+| `_admin/blogs/[id]/page.js` | 10 | `admin-blogs.css` ✅ | — | ✅ done |
+| `_admin/blogs/new/page.js` | 6 | `admin-blogs.css` ✅ | — | ✅ done |
+| `_admin/blogs/config/page.js` | 308 | `admin-blogs.css` ✅ | migrated to shared feedback | ✅ done |
+| `_admin/legal/page.js` | 238 | `admin-blogs.css` ✅ | — | ✅ done |
+| `_admin/legal/[id]/page.js` | 262 | `admin-blogs.css` ✅ | — | ✅ done |
+| `_admin/legal/[id]/pages/[docId]/page.js` | 66 | `admin-blogs.css` ✅ | — | ✅ done |
+| `_admin/legal/[id]/pages/new/page.js` | 78 | `admin-blogs.css` ✅ | — | ✅ done |
+| `_admin/legal/new/page.js` | 35 | `admin-blogs.css` ✅ | — | ✅ done |
+| `components/admin/BlogEditorForm.js` | 919 | `admin-blogs.css` ✅ | migrated to shared feedback | ✅ done |
+| `components/admin/legal/LegalAppForm.js` | 229 | `admin-blogs.css` ✅ | — | ✅ done |
+| `components/admin/legal/LegalDocumentForm.js` | 306 | `admin-blogs.css` ✅ | — | ✅ done |
 
-### blogs/page.js — things to do
-- List: `Panel flush` + `adm-list` / `adm-row`. Status badge (Draft/Published) → `Badge tone="warn"/"ok"`.
-- Filter tabs (All / Published / Drafts) → `adm-tabs`.
-- `blogs/config/page.js` is missing its CSS import — add `admin-blogs.css`.
+### Blogs — complete
+- List uses `Panel flush` + responsive `adm-list` / `adm-row` instead of a horizontally scrolling table.
+- Status filters, API sorting, search, infinite loading, publish/review actions, and deletion remain available.
+- Editor uses the full-width split layout, Markdown toolbar, SEO/social metadata, image upload previews, and shared feedback.
+- Upload controls have visible focus, clear instructions, and disabled states while uploading.
+- Blog settings retain the existing `admin-blogs.css` import and now use shared feedback.
 
-### BlogEditorForm.js — things to do
-- `adm-page-wide` layout (full-width editor).
-- `adm-split` xl: editor main + `adm-side` publish panel.
-- Markdown toolbar → `MarkdownToolbar.js` already exists; wire `adm-btn` class.
-- Tags, cover image → `adm-sc-drop`, `adm-sc-gallery`.
+### Legal — complete
+- App and document directories use responsive lists, search, status badges, previews, and clear paths back to the app hub.
+- The app editor pairs with its hub summary/delete panel; the document editor uses a split editor/publish layout with Markdown/HTML preview, SEO controls, and shared feedback.
+- Editor pages use the wider content layout; format and preview controls expose pressed-button state.
+- Legal search now has an inline clear control.
 
 ---
 
