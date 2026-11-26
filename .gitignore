@@ -68,3 +68,7 @@ brag-*
 
 # vite build output
 /web/dist
+
+# python caches
+__pycache__/
+*.pyc
