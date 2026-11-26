@@ -17,6 +17,7 @@ bodies such as backups never sit in memory.
 | Content writes | socials, themes, projects, deployments (and their reorder), gallery, blogs, legal apps and pages |
 | AI Hub writes | skill categories, skills, recommendations, credits, prompts, `/api/ai/seed` |
 | Contact messages | `GET` and `DELETE /api/contact/message` (the public `POST` is still Next) |
+| Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `mcp/{config,token}`, `crons/timezone`, `health/targets`, `analytics`, `security/*` |
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
 | Static | `/_app/*` and `/_next/static/*` with a one-year immutable cache |
 
@@ -48,6 +49,7 @@ SEO tools read through them) and queues search-engine pings. The call carries an
 | `api.rs`, `site_api.rs`, `github.rs` | read APIs |
 | `auth.rs`, `session.rs`, `crypto.rs`, `limit.rs`, `analytics.rs` | sign-in, session cookie, encrypted fields, rate limits, tracking |
 | `write.rs`, `admin_site.rs`, `admin_content.rs`, `admin_blogs.rs`, `admin_legal.rs`, `admin_ai.rs` | writes |
+| `admin_settings.rs`, `admin_security.rs`, `admin_analytics.rs`, `seo.rs`, `geoip.rs`, `cron.rs` | admin settings, sessions and audit, analytics, SEO settings, IP places, cron schedules |
 | `db.rs`, `export.rs` | database pool and ids, backup zip |
 
 `crypto.rs` and `session.rs` read values written by the Node code (encrypted DB fields, the `session` cookie).
@@ -90,7 +92,7 @@ node --env-file=.env scripts/perf/api-parity.mjs scripts/perf/api/batch1.txt
 # Sign-in and analytics
 node --env-file=.env scripts/perf/auth-parity.mjs
 # Writes: same response and same row changes
-node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai}.mjs
+node --env-file=.env scripts/perf/write-parity.mjs scripts/perf/writes/{site,content,blogs,legal,ai,admin}.mjs
 # Browser tests through Rust (headless)
 E2E_PORT=8080 pnpm exec playwright test e2e/admin-pages.spec.js e2e/site-pages.spec.js e2e/blogs.spec.js
 ```

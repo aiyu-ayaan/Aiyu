@@ -6,7 +6,7 @@
 // Rust must trust the loopback peer (TRUSTED_PROXIES=127.0.0.1).
 // Usage: node --env-file=.env scripts/perf/write-parity.mjs [--next http://127.0.0.1:3100] [--rust http://127.0.0.1:8080]
 //          [--only <substring>] scripts/perf/writes/<group>.mjs ...
-import { randomInt } from 'node:crypto';
+import { createDecipheriv, createHash, randomInt } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -46,18 +46,41 @@ async function snapshot(models) {
 }
 
 async function restore(models, saved) {
-    const now = await snapshot(models);
+    const added = await snapshot(models);
     // Children are listed after their parents: remove them first, add parents first.
     for (const model of [...models].reverse()) {
-        for (const id of now[model].keys()) if (!saved[model].has(id)) await prisma[model].deleteMany({ where: { id } });
+        const ids = [...added[model].keys()].filter((id) => !saved[model].has(id));
+        if (ids.length) await prisma[model].deleteMany({ where: { id: { in: ids } } });
     }
+    const now = await snapshot(models);
     for (const model of models) {
+        // `now` was read before the removals above; rows gone since then are put back in batches (a reset removes thousands).
+        const gone = [...saved[model]].filter(([id]) => !now[model].has(id)).map(([, row]) => writable(model, row));
+        for (let i = 0; i < gone.length; i += 1000) await prisma[model].createMany({ data: gone.slice(i, i + 1000), skipDuplicates: true });
         for (const [id, row] of saved[model]) {
-            const current = (await prisma[model].findUnique({ where: { id } }));
-            if (!current) await prisma[model].create({ data: writable(model, row) });
-            else if (!isDeepStrictEqual(current, row)) await prisma[model].update({ where: { id }, data: writable(model, row) });
+            const current = now[model].get(id);
+            if (current && !isDeepStrictEqual(current, row)) await prisma[model].update({ where: { id }, data: writable(model, row) });
         }
     }
+}
+
+// An encrypted column (src/lib/encryption.js) has a random IV: compare what it holds.
+function opened(value) {
+    const [iv, data] = value.split(':');
+    const key = createHash('sha256').update(String(process.env.JWT_SECRET)).digest('base64').substring(0, 32);
+    try {
+        const cipher = createDecipheriv('aes-256-cbc', Buffer.from(key), Buffer.from(iv, 'hex'));
+        return `<encrypted ${Buffer.concat([cipher.update(Buffer.from(data, 'hex')), cipher.final()])}>`;
+    } catch {
+        return value;
+    }
+}
+
+// Values a case names in `mask` are random per call (tokens and their hashes, client addresses): only their presence is compared.
+function masked(value, keys) {
+    if (Array.isArray(value)) return value.map((v) => masked(v, keys));
+    if (!value || typeof value !== 'object' || value instanceof Date) return value;
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, keys.includes(k) && v ? '<masked>' : masked(v, keys)]));
 }
 
 // Ids and times that differ between the two runs: ids the call created, and timestamps taken during it.
@@ -66,6 +89,7 @@ function normalizer(known, since) {
     return function normalize(value) {
         if (value instanceof Date) value = value.toISOString();
         if (typeof value === 'string') {
+            if (/^[0-9a-f]{32}:([0-9a-f]{32})+$/.test(value)) return opened(value);
             if (/^\d{4}-\d\d-\d\dT[\d:.]+Z$/.test(value) && Date.parse(value) >= since) return '<now>';
             if (/^c[0-9a-z]{24}$/.test(value) && !known.has(value)) {
                 if (!ids.has(value)) ids.set(value, `<new ${ids.size + 1}>`);
@@ -119,7 +143,10 @@ async function run(server, test, cookie) {
         for (const key of test.ignore ?? []) if (parsed && typeof parsed === 'object') delete parsed[key];
         const after = await snapshot(test.models);
         const normalize = normalizer(known, since);
-        return normalize({ status: res.status, headers: Object.fromEntries(HEADERS.map((h) => [h, res.headers.get(h)])), body: parsed, db: changes(test.models, before, after) });
+        const db = changes(test.models, before, after);
+        // `check` sees the raw reply and rows, for what masking would hide (a stored hash matches its token).
+        const checked = test.check ? test.check(parsed, db) : true;
+        return normalize(masked({ status: res.status, headers: Object.fromEntries(HEADERS.map((h) => [h, res.headers.get(h)])), body: parsed, db, checked }, test.mask ?? []));
     } finally {
         await restore(test.models, saved);
     }
@@ -139,6 +166,7 @@ for (const file of files) {
         const wrong = ['status', 'headers', 'body', 'db'].filter((k) => !isDeepStrictEqual(next[k], rust[k]));
         // A case that is meant to write must write, or two matching failures would pass.
         if (!wrong.length && test.expect && next.status !== test.expect) wrong.push('expect');
+        if (next.checked !== true || rust.checked !== true) wrong.push('checked');
         if (!wrong.length) {
             console.log(`ok   ${name} [${next.status}, ${next.db.length} row changes]`);
             continue;

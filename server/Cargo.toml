@@ -33,6 +33,7 @@ regex = "1"
 pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
 ammonia = "4"
 url = "2"
+chrono-tz = { version = "0.10", features = ["case-insensitive"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

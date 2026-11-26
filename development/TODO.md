@@ -12,11 +12,12 @@ Next ignores `_` folders). Next only serves `/api/*`, `/.well-known/*`, `/docs/*
 Milestone 8 (API routes) IN PROGRESS.
 - Done 2026-11-26: public GETs, auth + analytics/track, and every content write outside `/api/admin/*` (site
   documents, socials, themes, projects, deployments, gallery, blogs, legal, AI Hub, admin side of contact messages).
-- NEXT: the plain `/api/admin/*` CRUD (ads, social, notifications config, security sessions and audit, blogs token,
-  mcp config and token, seo config, analytics, health targets, cron timezone).
-- Then integrations (Drive, import, uploads/sharp/HEIC, crons, MCP, AI generation, GitHub sync and webhook, SEO crawl
-  and fix, contact form notifications, notification test, resume compile, storage): port or keep a small Node sidecar,
-  user's call.
+- Done: the plain `/api/admin/*` settings, security and analytics routes (`scripts/perf/writes/admin.mjs` 90/90;
+  `scripts/perf/api/admin.txt` differs only in the order of analytics rows with equal counts).
+- Decided 2026-11-26 (user): port every integration to Rust, no Node sidecar.
+- NEXT: integrations (Drive, import, uploads/sharp/HEIC, crons, MCP, AI generation, GitHub OAuth, sync and webhook, SEO
+  crawl and fix, contact form notifications, notification test, resume compile, storage), then sitemap.xml,
+  robots.txt, ads.txt, auth.md, /docs/*, and the streamed restore.
 - Checked 2026-11-26: write parity 249/249, auth parity all equal, read parity batch1 42/42, batch2 32/32, blogs 22/22,
   batch3 56/58 (the two request-time dates on search hits). In Chrome, signed in, through Rust: social link create,
   disable and delete; footer save; blog draft create, edit and delete; contact list; About save. Not checked in Chrome:
@@ -231,22 +232,22 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 
 ## Milestone 8: Port API routes
 - [x] `/api/about` (Rust)
-- [ ] `/api/admin/ads`
+- [x] `/api/admin/ads` (Rust)
 - [ ] `/api/admin/ai/config`
 - [ ] `/api/admin/ai/generate`
 - [ ] `/api/admin/ai/logs`
 - [ ] `/api/admin/ai/models`
 - [ ] `/api/admin/ai/text`
 - [ ] `/api/admin/ai/validate-provider`
-- [ ] `/api/admin/analytics`
-- [ ] `/api/admin/blogs/token`
+- [x] `/api/admin/analytics` (Rust)
+- [x] `/api/admin/blogs/token` (Rust)
 - [ ] `/api/admin/crons`
 - [ ] `/api/admin/crons/env`
 - [ ] `/api/admin/crons/[id]`
 - [ ] `/api/admin/crons/[id]/run`
 - [ ] `/api/admin/crons/logs`
 - [ ] `/api/admin/crons/preview`
-- [ ] `/api/admin/crons/timezone`
+- [x] `/api/admin/crons/timezone` (Rust)
 - [x] `/api/admin/export` (Rust)
 - [ ] `/api/admin/gdrive/auth`
 - [ ] `/api/admin/gdrive/backup`
@@ -260,30 +261,30 @@ Each page: Rust data + head + Vite route + e2e passing through Rust, then the Ne
 - [ ] `/api/admin/gdrive/status`
 - [ ] `/api/admin/health/analyze`
 - [ ] `/api/admin/health/metrics`
-- [ ] `/api/admin/health/targets`
+- [x] `/api/admin/health/targets` (Rust)
 - [ ] `/api/admin/health/uptime`
 - [ ] `/api/admin/health/uptime/check`
 - [ ] `/api/admin/icons`
 - [ ] `/api/admin/images/upload`
 - [ ] `/api/admin/import`
-- [ ] `/api/admin/mcp/config`
-- [ ] `/api/admin/mcp/token`
+- [x] `/api/admin/mcp/config` (Rust)
+- [x] `/api/admin/mcp/token` (Rust)
 - [ ] `/api/admin/migrate-gallery`
-- [ ] `/api/admin/notifications`
+- [x] `/api/admin/notifications` (Rust)
 - [ ] `/api/admin/notifications/test`
 - [ ] `/api/admin/purge-cache`
 - [ ] `/api/admin/resume`
 - [ ] `/api/admin/resume/compile`
 - [ ] `/api/admin/resume/publish`
-- [ ] `/api/admin/security/audit`
-- [ ] `/api/admin/security/sessions`
-- [ ] `/api/admin/security/sessions/[id]/revoke`
+- [x] `/api/admin/security/audit` (Rust)
+- [x] `/api/admin/security/sessions` (Rust)
+- [x] `/api/admin/security/sessions/[id]/revoke` (Rust)
 - [ ] `/api/admin/seo/audit`
-- [ ] `/api/admin/seo/config`
+- [x] `/api/admin/seo/config` (Rust)
 - [ ] `/api/admin/seo/crawl`
 - [ ] `/api/admin/seo/fix`
 - [ ] `/api/admin/seo/index`
-- [ ] `/api/admin/social`
+- [x] `/api/admin/social` (Rust)
 - [ ] `/api/admin/storage`
 - [ ] `/api/admin/storage/migrate`
 - [ ] `/api/admin/storage/unreferenced`

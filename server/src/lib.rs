@@ -1,7 +1,10 @@
 pub mod admin_ai;
+pub mod admin_analytics;
 pub mod admin_blogs;
 pub mod admin_content;
 pub mod admin_legal;
+pub mod admin_security;
+pub mod admin_settings;
 pub mod admin_site;
 pub mod ai;
 pub mod analytics;
@@ -11,12 +14,15 @@ pub mod legal;
 pub mod limit;
 pub mod compat;
 pub mod config;
+pub mod cron;
 pub mod db;
 pub mod crypto;
 pub mod export;
+pub mod geoip;
 pub mod github;
 pub mod pages;
 pub mod proxy;
+pub mod seo;
 pub mod session;
 pub mod site_api;
 pub mod web;
@@ -25,7 +31,7 @@ pub mod write;
 use axum::{
     Router,
     http::{HeaderValue, StatusCode, header},
-    routing::{any, get, patch, post, put},
+    routing::{any, delete, get, patch, post, put},
 };
 use tower_http::{
     compression::{
@@ -90,6 +96,7 @@ impl AppState {
 /// few listed paths): the limit is applied once, to all of them.
 fn limited_api(state: &AppState) -> Router<AppState> {
     use admin_ai as ai_hub;
+    use admin_settings as settings;
     use admin_blogs as posts;
     use admin_content as content;
     use admin_legal as legal_admin;
@@ -135,6 +142,17 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/ai/prompts", post(ai_hub::create_prompt))
         .route("/api/ai/prompts/{id}", put(ai_hub::update_prompt).delete(ai_hub::delete_prompt))
         .route("/api/ai/seed", post(ai_hub::post_seed))
+        .route("/api/admin/ads", put(settings::put_ads))
+        .route("/api/admin/social", put(settings::put_social))
+        .route("/api/admin/seo/config", put(settings::put_seo_config))
+        .route("/api/admin/notifications", put(settings::put_notifications))
+        .route("/api/admin/blogs/token", post(settings::create_blog_token).delete(settings::delete_blog_token))
+        .route("/api/admin/mcp/token", post(settings::create_mcp_token).delete(settings::delete_mcp_token))
+        .route("/api/admin/mcp/config", put(settings::put_mcp_config))
+        .route("/api/admin/crons/timezone", post(settings::save_timezone))
+        .route("/api/admin/health/targets", post(settings::create_target).delete(settings::delete_target))
+        .route("/api/admin/security/sessions/{id}/revoke", post(admin_security::revoke))
+        .route("/api/admin/analytics", delete(admin_analytics::reset))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
 }
 
@@ -190,6 +208,18 @@ pub fn router(state: AppState) -> Router {
         .route("/{legal_app}", get(web::legal_app))
         .route("/{legal_app}/{legal_doc}", get(web::legal_doc))
         .route("/api/admin/export", get(export::export))
+        .route("/api/admin/ads", get(admin_settings::ads))
+        .route("/api/admin/social", get(admin_settings::social))
+        .route("/api/admin/seo/config", get(admin_settings::seo_config))
+        .route("/api/admin/notifications", get(admin_settings::notifications))
+        .route("/api/admin/blogs/token", get(admin_settings::blog_token))
+        .route("/api/admin/mcp/token", get(admin_settings::mcp_token))
+        .route("/api/admin/mcp/config", get(admin_settings::mcp_config))
+        .route("/api/admin/crons/timezone", get(admin_settings::timezone))
+        .route("/api/admin/health/targets", get(admin_settings::targets))
+        .route("/api/admin/security/audit", get(admin_security::audit_log))
+        .route("/api/admin/security/sessions", get(admin_security::sessions))
+        .route("/api/admin/analytics", get(admin_analytics::analytics))
         // API routes ported from Next; other methods on these paths still go to Next.
         .route("/api/about", get(api::about))
         .route("/api/home", get(api::home))

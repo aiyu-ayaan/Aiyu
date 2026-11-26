@@ -112,7 +112,7 @@ async fn next_rsc_requests_to_vite_pages_get_an_empty_non_rsc_reply() {
 async fn non_get_methods_on_rust_page_patterns_reach_next() {
     // `/{legal_app}/{legal_doc}` and the page routes are GET-only in Rust; uploads and admin saves must still
     // reach Next instead of getting a 405.
-    for (method, uri) in [("POST", "/api/upload"), ("PUT", "/api/admin/ads"), ("PATCH", "/api/about"), ("POST", "/blogs")] {
+    for (method, uri) in [("POST", "/api/upload"), ("PUT", "/api/admin/storage"), ("PATCH", "/api/about"), ("POST", "/blogs")] {
         let mut req = Request::builder().method(method).uri(uri).header("host", "example.com").body(Body::empty()).unwrap();
         req.extensions_mut().insert(ConnectInfo::<SocketAddr>("127.0.0.1:5555".parse().unwrap()));
         let res = app("").await.oneshot(req).await.unwrap();
@@ -143,6 +143,14 @@ async fn ported_writes_refuse_anonymous_callers() {
         ("POST", "/api/ai/skills/categories"), ("PUT", "/api/ai/skills/categories/x"), ("POST", "/api/ai/skills/items"),
         ("DELETE", "/api/ai/skills/items/x"), ("POST", "/api/ai/recommendations"), ("PUT", "/api/ai/credits/x"),
         ("POST", "/api/ai/prompts"), ("DELETE", "/api/ai/prompts/x"), ("POST", "/api/ai/seed"),
+        ("GET", "/api/admin/ads"), ("PUT", "/api/admin/ads"), ("GET", "/api/admin/social"), ("PUT", "/api/admin/social"),
+        ("GET", "/api/admin/seo/config"), ("PUT", "/api/admin/seo/config"), ("GET", "/api/admin/notifications"),
+        ("PUT", "/api/admin/notifications"), ("GET", "/api/admin/blogs/token"), ("POST", "/api/admin/blogs/token"),
+        ("DELETE", "/api/admin/blogs/token"), ("GET", "/api/admin/mcp/token"), ("POST", "/api/admin/mcp/token"),
+        ("DELETE", "/api/admin/mcp/token"), ("GET", "/api/admin/crons/timezone"), ("POST", "/api/admin/crons/timezone"),
+        ("GET", "/api/admin/health/targets"), ("POST", "/api/admin/health/targets"), ("DELETE", "/api/admin/health/targets?id=x"),
+        ("GET", "/api/admin/security/audit"), ("GET", "/api/admin/security/sessions"),
+        ("POST", "/api/admin/security/sessions/x/revoke"), ("GET", "/api/admin/analytics"), ("DELETE", "/api/admin/analytics"),
     ] {
         let mut req = Request::builder().method(method).uri(uri).header("content-type", "application/json").body(Body::from("{}")).unwrap();
         req.extensions_mut().insert(ConnectInfo::<SocketAddr>("127.0.0.1:5555".parse().unwrap()));

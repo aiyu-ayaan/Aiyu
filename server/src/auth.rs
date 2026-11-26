@@ -70,7 +70,7 @@ fn env(name: &str) -> String {
 }
 
 /// `logAudit`: an audit write must never break the action it records.
-async fn audit(state: &AppState, parts: &Parts, action: &str, category: &str, details: &str) {
+pub(crate) async fn audit(state: &AppState, parts: &Parts, action: &str, category: &str, details: &str) {
     let written = sqlx::query(r#"INSERT INTO "AuditLog" (id, action, category, details, "ipAddress", "userAgent", "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7)"#)
         .bind(new_id())
         .bind(action)

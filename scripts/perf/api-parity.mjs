@@ -34,7 +34,9 @@ async function cookieFor(base) {
     const form = new FormData();
     form.set('username', process.env.ADMIN_USERNAME || '');
     form.set('password', process.env.ADMIN_PASSWORD || '');
-    const res = await fetch(`${base}/api/auth/login`, { method: 'POST', body: form, redirect: 'manual' });
+    // A fresh address per run, or the login rate limit refuses the fifth run within five minutes.
+    const headers = { 'x-real-ip': `198.51.${1 + Math.floor(Math.random() * 250)}.${1 + Math.floor(Math.random() * 250)}` };
+    const res = await fetch(`${base}/api/auth/login`, { method: 'POST', body: form, headers, redirect: 'manual' });
     const c = (res.headers.getSetCookie?.() || []).map((x) => x.split(';')[0]).find((x) => x.startsWith('session='));
     if (!c) throw new Error(`login failed (${res.status})`);
     return c;

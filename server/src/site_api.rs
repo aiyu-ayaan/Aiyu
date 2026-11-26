@@ -618,6 +618,80 @@ fn merged(defaults: &Value, stored: &Value) -> Map<String, Value> {
     out
 }
 
+/// `mergeMcpConfig(stored)`: the shape the admin editor saves. `defaults` is DEFAULT_MCP_CONFIG.
+pub fn merge_mcp_config(stored: &Value, defaults: &Value) -> Value {
+    let data = as_object(stored);
+    let get = |v: &Value, key: &str| v.get(key).cloned().unwrap_or(Value::Null);
+    // `String(v || '')`
+    let text = |v: &Value, key: &str| str_or_empty(&get(v, key));
+    let flag = |v: &Value, key: &str| truthy(&get(v, key));
+    // `v.enabled !== false`
+    let on = |v: &Value| get(v, "enabled") != Value::Bool(false);
+    let list = |key: &str| if data.contains_key(key) { as_array(&data[key]) } else { as_array(&defaults[key]) };
+    let own = |key: &str| as_array(data.get(key).unwrap_or(&Value::Null));
+    let section = |key: &str| data.get(key).cloned().unwrap_or(Value::Null);
+
+    let capabilities: Map<String, Value> = ["tools", "resources", "prompts", "logging", "completions"]
+        .iter()
+        .map(|&k| (k.to_string(), Value::Object(merged(&defaults["capabilities"][k], &get(&section("capabilities"), k)))))
+        .collect();
+    let tools: Vec<Value> = list("tools")
+        .iter()
+        .map(|t| {
+            let ann = get(t, "annotations");
+            json!({
+                "name": text(t, "name"), "title": text(t, "title"), "description": text(t, "description"), "enabled": on(t),
+                "inputSchema": get(t, "inputSchema").as_str().unwrap_or(""),
+                "annotations": {
+                    "readOnlyHint": flag(&ann, "readOnlyHint"), "destructiveHint": flag(&ann, "destructiveHint"),
+                    "idempotentHint": flag(&ann, "idempotentHint"), "openWorldHint": flag(&ann, "openWorldHint"),
+                },
+            })
+        })
+        .collect();
+    let transports: Vec<Value> = list("transports")
+        .iter()
+        .map(|t| {
+            let kind = text(t, "type");
+            let kind = if kind.is_empty() { "webmcp".to_string() } else { kind };
+            json!({ "type": kind, "endpoint": text(t, "endpoint"), "description": text(t, "description") })
+        })
+        .collect();
+    let resources: Vec<Value> = own("resources")
+        .iter()
+        .map(|r| {
+            json!({
+                "uri": text(r, "uri"), "name": text(r, "name"), "title": text(r, "title"),
+                "description": text(r, "description"), "mimeType": text(r, "mimeType"), "enabled": on(r),
+            })
+        })
+        .collect();
+    let prompts: Vec<Value> = own("prompts")
+        .iter()
+        .map(|p| {
+            let arguments: Vec<Value> = as_array(&get(p, "arguments"))
+                .iter()
+                .map(|a| json!({ "name": text(a, "name"), "description": text(a, "description"), "required": flag(a, "required") }))
+                .collect();
+            json!({ "name": text(p, "name"), "title": text(p, "title"), "description": text(p, "description"), "enabled": on(p), "arguments": arguments })
+        })
+        .collect();
+    let links: Vec<Value> = list("links").iter().map(|l| json!({ "name": text(l, "name"), "url": text(l, "url") })).collect();
+
+    json!({
+        "enabled": on(stored),
+        "server": merged(&defaults["server"], &section("server")),
+        "transports": transports,
+        "capabilities": capabilities,
+        "tools": tools,
+        "resources": resources,
+        "prompts": prompts,
+        "links": links,
+        // Write access stays off unless switched on.
+        "write": { "enabled": section("write")["enabled"] == Value::Bool(true) },
+    })
+}
+
 /// `buildMcpServerCard(mergeMcpConfig(stored))` from src/lib/mcpConfig.js. `defaults` is DEFAULT_MCP_CONFIG,
 /// `builtin` is `builtinToolCards()`, `base` the site URL.
 pub fn mcp_card(stored: &Value, defaults: &Value, builtin: &Value, base: &str) -> Value {
