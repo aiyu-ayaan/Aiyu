@@ -1,2 +1,4 @@
 .agents/** linguist-vendored
 .claude/** linguist-vendored
+public/doom/** linguist-vendored
+public/hf/** linguist-generated
