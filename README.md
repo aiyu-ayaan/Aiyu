@@ -119,25 +119,32 @@ Open **Portfolio** at `http://localhost` and **Admin** at `http://localhost/admi
 
 ### Local Development
 
-Requires **Node 24**, **pnpm**, **Rust (`cargo`)**, and `libheif1` (for HEIC uploads). SQLite (`data/aiyu.db`) is created, migrated, and seeded automatically on first start.
+**Prerequisites:** Node 24+, `pnpm`, stable Rust toolchain (`cargo`), and `libheif1` (optional, for HEIC uploads). No external database is needed — SQLite (`data/aiyu.db`) is created, migrated, and seeded automatically on first start.
 
 ```bash
+git clone https://github.com/aiyu-ayaan/Aiyu.git && cd Aiyu
 cp .env.example .env    # set JWT_SECRET, ADMIN_USERNAME, ADMIN_PASSWORD
 pnpm install
-pnpm dev                # Vite (:3000) + debug aiyu-server (:8080)
+pnpm dev                # starts Vite (:3000) + debug aiyu-server (:8080)
 ```
 
-Production build locally: `pnpm build && pnpm start`.
+- **Site:** `http://localhost:3000` (hot-reloads on save; override ports with `PORT` and `RUST_PORT`)
+- **Admin Panel:** `http://localhost:3000/admin/login`
+- **Local Production Build:** `pnpm build && pnpm start` (serves release binary + `web/dist` on `http://localhost:8080`)
+- **Backup / Restore:** Export or import full site ZIPs (DB + uploads) directly from **Admin → Database** (`/api/admin/export` & `/api/admin/import`).
 
 ---
 
-## 🧪 Tests & Checks
+## 🧪 Tests, Checks & Benchmarks
 
 ```bash
 pnpm test               # Vitest unit & component tests
 pnpm test:ui            # Playwright end-to-end tests
-pnpm server:test        # Rust server tests
+pnpm server:test        # Rust unit & integration tests
 pnpm lint && pnpm web:typecheck
+
+# Memory + latency benchmark against a running server:
+node --env-file=.env scripts/perf/bench.mjs --url http://localhost:8080 --pid <server-pid> --backups 5
 ```
 
 ---
