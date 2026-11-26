@@ -8,7 +8,7 @@ import {
     FaCopy, FaArrowsRotate, FaFloppyDisk, FaUpRightFromSquare,
 } from "react-icons/fa6";
 import RepoSyncPanel from "@/app/components/admin/github/RepoSyncPanel";
-import Toast from "@/app/components/admin/Toast";
+import { useAdminFeedback } from "@/app/components/admin/feedback/AdminFeedbackProvider";
 import { PageHeader, Panel, Badge, EmptyState, Loading, Field } from "@/app/components/admin/ui";
 import "../../styles/admin-insights.css";
 
@@ -43,6 +43,7 @@ const SECTION_ICONS = {
 };
 
 export default function GitHubConfigPage() {
+    const { toast } = useAdminFeedback();
     const [config, setConfig] = useState({
         username: "",
         enabled: false,
@@ -78,12 +79,10 @@ export default function GitHubConfigPage() {
 
     const [availableRepos, setAvailableRepos] = useState([]);
     const [loadingRepos, setLoadingRepos] = useState(false);
-    const [notification, setNotification] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        toast(message, { success });
     };
 
     const fetchConfig = async () => {
@@ -287,8 +286,8 @@ export default function GitHubConfigPage() {
                 }
             />
 
-            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_21rem] gap-6 items-start">
-                <div className="space-y-6 min-w-0">
+            <div className="adm-split">
+                <div className="adm-stack">
                     <form id="github-config-form" onSubmit={handleSave} className="space-y-6">
                         {/* Connection & authentication */}
                         <Panel title="Connection & authentication">
@@ -739,7 +738,6 @@ export default function GitHubConfigPage() {
                 </aside>
             </div>
 
-            <Toast notification={notification} />
         </div>
     );
 }

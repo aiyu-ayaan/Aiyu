@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { SOCIAL_PAGES } from "@/lib/socialMeta";
-import Toast from "./Toast";
+import { useAdminFeedback } from "@/app/components/admin/feedback/AdminFeedbackProvider";
 import { Panel, Badge, EmptyState, Loading, Field } from "@/app/components/admin/ui";
 import {
     FaXmark, FaMagnifyingGlass, FaImage, FaArrowsRotate, FaFloppyDisk,
@@ -20,6 +20,7 @@ const emptyPages = () =>
 
 const SocialMetaForm = () => {
     const router = useRouter();
+    const { toast } = useAdminFeedback();
     // Branding / global metadata — persisted to /api/config
     const [branding, setBranding] = useState({
         siteTitle: "",
@@ -31,7 +32,6 @@ const SocialMetaForm = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
-    const [notification, setNotification] = useState(null);
     const [uploading, setUploading] = useState(null); // 'global' | page.key
 
     // Existing-image picker (reads /api/admin/storage upload library)
@@ -80,8 +80,7 @@ const SocialMetaForm = () => {
     };
 
     const showNotification = (success, message) => {
-        setNotification({ success, message });
-        setTimeout(() => setNotification(null), 3000);
+        toast(message, { success });
     };
 
     const fetchData = async () => {
@@ -260,9 +259,9 @@ const SocialMetaForm = () => {
             <form
                 id="social-meta-form"
                 onSubmit={handleSubmit}
-                className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_21rem] gap-6 items-start"
+                className="adm-split"
             >
-                <div className="space-y-6 min-w-0">
+                <div className="adm-stack">
                     {error && (
                         <div role="alert" className="adm-notice adm-notice-error flex items-center gap-2.5">
                             <FaTriangleExclamation aria-hidden="true" className="shrink-0" />
@@ -552,8 +551,6 @@ const SocialMetaForm = () => {
                     </Panel>
                 </aside>
             </form>
-
-            <Toast notification={notification} />
 
             {/* Library Picker Modal */}
             {pickerOpen && (

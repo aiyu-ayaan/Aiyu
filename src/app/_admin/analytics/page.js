@@ -4,7 +4,8 @@ import {
     FaArrowsRotate, FaTriangleExclamation, FaArrowTrendUp, FaArrowTrendDown,
     FaTrash,
 } from "react-icons/fa6";
-import { LineChart, BarList, DonutSplit, WorldMap } from "./charts";
+import { BarList, DonutSplit, WorldMap } from "./charts";
+import LineChart from "./LineChart";
 import { useAdminFeedback } from "@/app/components/admin/feedback/AdminFeedbackProvider";
 import { PageHeader, Panel, Stat, Badge, Loading } from "@/app/components/admin/ui";
 import "../../styles/admin-insights.css";
@@ -92,6 +93,10 @@ function KpiStatCard({ label, value, delta, sub, periodDays }) {
             }
         />
     );
+}
+
+function InsightChart({ children }) {
+    return <div className="adm-insight-chart">{children}</div>;
 }
 
 export default function AnalyticsDashboard() {
@@ -230,14 +235,14 @@ export default function AnalyticsDashboard() {
                 description="First-party traffic, content engagement, referrers, and visitor geography."
                 actions={
                     <>
-                        <div role="group" aria-label="Time range" className="flex flex-wrap items-center gap-1.5">
+                        <div role="group" aria-label="Time range" className="adm-tabs">
                             {RANGES.map((r) => (
                                 <button
                                     key={r.key}
                                     type="button"
                                     aria-pressed={range === r.key}
                                     onClick={() => setRange(r.key)}
-                                    className={`adm-btn ${range === r.key ? "adm-btn-primary" : ""}`}
+                                    className="adm-tab"
                                 >
                                     {r.label}
                                 </button>
@@ -324,19 +329,23 @@ export default function AnalyticsDashboard() {
 
                 {/* Row 2: Top pages + Referrers */}
                 <Panel flush title="Top pages" className="flex flex-col md:col-span-6">
-                    {loading && !data ? (
-                        <Loading label="Loading top pages" rows={5} />
-                    ) : (
-                        <BarList items={topPages} share emptyLabel="No page views recorded yet." />
-                    )}
+                    <InsightChart>
+                        {loading && !data ? (
+                            <Loading label="Loading top pages" rows={5} />
+                        ) : (
+                            <BarList items={topPages} share emptyLabel="No page views recorded yet." />
+                        )}
+                    </InsightChart>
                 </Panel>
 
                 <Panel flush title="Referrers" className="flex flex-col md:col-span-6">
-                    {loading && !data ? (
-                        <Loading label="Loading referrers" rows={5} />
-                    ) : (
-                        <BarList items={referrers} accent="var(--accent-purple)" share emptyLabel="No referrers recorded yet." />
-                    )}
+                    <InsightChart>
+                        {loading && !data ? (
+                            <Loading label="Loading referrers" rows={5} />
+                        ) : (
+                            <BarList items={referrers} accent="var(--accent-purple)" share emptyLabel="No referrers recorded yet." />
+                        )}
+                    </InsightChart>
                 </Panel>
 
                 {/* Row 3: Visitor world map + Top countries */}
@@ -349,7 +358,9 @@ export default function AnalyticsDashboard() {
                     }
                     className="flex flex-col md:col-span-12 xl:col-span-8"
                 >
-                    <WorldMap data={geoCountries} />
+                    <InsightChart>
+                        <WorldMap data={geoCountries} />
+                    </InsightChart>
                     {countriesReached === 0 && (
                         <p className="adm-help mt-3">
                             Country is resolved from edge headers (Cloudflare or Vercel) or an IP fallback; local traffic appears as private.
@@ -363,20 +374,24 @@ export default function AnalyticsDashboard() {
                     actions={topCountry ? <Badge>{flagEmoji(topCountry.code)} {countryName(topCountry.code)}</Badge> : null}
                     className="flex flex-col md:col-span-6 xl:col-span-4"
                 >
-                    {loading && !data ? (
-                        <Loading label="Loading countries" rows={6} />
-                    ) : (
-                        <BarList items={countries} accent="var(--status-success)" share emptyLabel="No location data recorded yet." />
-                    )}
+                    <InsightChart>
+                        {loading && !data ? (
+                            <Loading label="Loading countries" rows={6} />
+                        ) : (
+                            <BarList items={countries} accent="var(--status-success)" share emptyLabel="No location data recorded yet." />
+                        )}
+                    </InsightChart>
                 </Panel>
 
                 {/* Row 4: Devices + Top blogs + Top projects */}
                 <Panel title="Devices" className="flex flex-col md:col-span-6 xl:col-span-4">
-                    {loading && !data ? (
-                        <Loading label="Loading devices" rows={4} />
-                    ) : (
-                        <DonutSplit segments={devices} />
-                    )}
+                    <InsightChart>
+                        {loading && !data ? (
+                            <Loading label="Loading devices" rows={4} />
+                        ) : (
+                            <DonutSplit segments={devices} />
+                        )}
+                    </InsightChart>
                 </Panel>
 
                 {["blog", "project"].map((type) => {
@@ -389,11 +404,13 @@ export default function AnalyticsDashboard() {
                     }));
                     return (
                         <Panel key={type} flush title={ENTITY_META[type].label} className="flex flex-col md:col-span-6 xl:col-span-4">
-                            {loading && !data ? (
-                                <Loading label={`Loading ${ENTITY_META[type].label}`} rows={4} />
-                            ) : (
-                                <BarList items={items} emptyLabel="No views recorded yet." />
-                            )}
+                            <InsightChart>
+                                {loading && !data ? (
+                                    <Loading label={`Loading ${ENTITY_META[type].label}`} rows={4} />
+                                ) : (
+                                    <BarList items={items} emptyLabel="No views recorded yet." />
+                                )}
+                            </InsightChart>
                         </Panel>
                     );
                 })}
@@ -409,11 +426,13 @@ export default function AnalyticsDashboard() {
                     }));
                     return (
                         <Panel key={type} flush title={ENTITY_META[type].label} className="flex flex-col md:col-span-6">
-                            {loading && !data ? (
-                                <Loading label={`Loading ${ENTITY_META[type].label}`} rows={4} />
-                            ) : (
-                                <BarList items={items} emptyLabel="No views recorded yet." />
-                            )}
+                            <InsightChart>
+                                {loading && !data ? (
+                                    <Loading label={`Loading ${ENTITY_META[type].label}`} rows={4} />
+                                ) : (
+                                    <BarList items={items} emptyLabel="No views recorded yet." />
+                                )}
+                            </InsightChart>
                         </Panel>
                     );
                 })}

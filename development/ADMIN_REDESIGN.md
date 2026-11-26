@@ -29,20 +29,20 @@ Branch `migrate/rust-vite`. Visual + markup pass only — no logic, no fetch URL
 
 ---
 
-## Group 1 — Dashboard & insights ✅ partial
+## Group 1 — Dashboard & insights ✅ done
 
 | File | Lines | CSS import | `Toast` legacy | Status |
 |---|---|---|---|---|
 | `_admin/page.js` (dashboard) | 341 | `admin-insights.css` ✅ | — | ✅ **done** |
-| `_admin/analytics/LineChart.js` | 108 | — | — | ✅ done (unused — integrate in analytics page) |
+| `_admin/analytics/LineChart.js` | 108 | — | — | ✅ done (integrated in analytics page) |
 | `_admin/health/shared.js` | 28 | — | — | ✅ done (helper, no page) |
-| `_admin/analytics/page.js` | ~380 | `admin-insights.css` ✅ | — | ⬜ **not started** |
-| `_admin/seo/page.js` | 1080 | `admin-insights.css` ✅ | — | ⬜ not started |
-| `_admin/social/page.js` | ~25 (thin shell) | `admin-insights.css` ✅ | — | ⬜ not started |
-| `_admin/health/page.js` | ~600 | `admin-insights.css` ✅ | — | ⬜ not started |
-| `_admin/github/page.js` | 745 | `admin-insights.css` ✅ | `Toast` ⚠️ | ⬜ not started |
-| `components/admin/SocialMetaForm.js` | 690 | — | — | ⬜ not started |
-| `components/admin/github/RepoSyncPanel.js` | 1056 | — | — | ⬜ not started |
+| `_admin/analytics/page.js` | ~380 | `admin-insights.css` ✅ | — | ✅ done |
+| `_admin/seo/page.js` | 1080 | `admin-insights.css` ✅ | — | ✅ done |
+| `_admin/social/page.js` | ~25 (thin shell) | `admin-insights.css` ✅ | — | ✅ done |
+| `_admin/health/page.js` | ~600 | `admin-insights.css` ✅ | — | ✅ done |
+| `_admin/github/page.js` | 745 | `admin-insights.css` ✅ | — | ✅ done |
+| `components/admin/SocialMetaForm.js` | 690 | `admin-insights.css` ✅ | — | ✅ done |
+| `components/admin/github/RepoSyncPanel.js` | 1056 | `admin-insights.css` ✅ | — | ✅ done |
 
 ### analytics/page.js — things to do
 - Wire in `LineChart.js` (already built, sitting unused).
@@ -258,8 +258,9 @@ const [notification, setNotification] = useState(null);
 // After
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 ...
-const { notify } = useAdminFeedback();
-notify({ message: '...', success: true });
+const { toast } = useAdminFeedback();
+toast.success('...');
+toast.error('...');
 // No JSX to add — feedback renders globally in the shell
 ```
 

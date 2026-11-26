@@ -287,8 +287,8 @@ function RobotsSitemapTab({ form, setForm, onSave, saving, siteSitemapUrl }) {
     );
 
     return (
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_24rem] gap-6 items-start">
-            <div className="space-y-6 min-w-0">
+        <div className="adm-split">
+            <div className="adm-stack">
                 <Panel
                     title="Robots.txt rules"
                     actions={
@@ -488,141 +488,141 @@ function IndexingTab({ status, logs, urls, indexing, onToggleAutoPing, onSaveKey
     }, [urls]);
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <Panel
-                title="Google service account"
-                actions={
-                    status?.hasServiceAccount ? (
-                        <Badge tone={status.invalid ? "error" : "ok"}>
-                            {status.invalid ? "Invalid key" : "Connected"}
-                        </Badge>
-                    ) : (
-                        <Badge>Not configured</Badge>
-                    )
-                }
-                className="md:col-span-6"
-            >
-                <div className="space-y-4">
-                    <div
-                        className={`adm-notice ${
-                            status?.hasServiceAccount
-                                ? status.invalid
-                                    ? "adm-notice-error"
-                                    : "adm-notice-ok"
-                                : ""
-                        }`}
-                    >
-                        {status?.hasServiceAccount
-                            ? status.invalid
-                                ? "Stored service account key is invalid or could not be parsed."
-                                : `Configured service account: ${status.email}`
-                            : "No Google Indexing API service account configured yet."}
-                    </div>
-
-                    <Field
-                        label="Service account JSON key"
-                        help="Paste the JSON credentials for a service account granted Owner access in Google Search Console."
-                        id="google-sa-json"
-                    >
-                        <textarea
-                            value={keyInput}
-                            onChange={(e) => setKeyInput(e.target.value)}
-                            rows={6}
-                            placeholder='{"type": "service_account", "client_email": "…"}'
-                            className="adm-input font-mono"
-                        />
-                    </Field>
-
-                    <div className="flex flex-wrap gap-2">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                onSaveKey(keyInput);
-                                setKeyInput("");
-                            }}
-                            disabled={savingKey || !keyInput.trim()}
-                            className="adm-btn adm-btn-primary"
+        <div className="adm-stack">
+            <div className="adm-split">
+                <Panel
+                    title="Google service account"
+                    actions={
+                        status?.hasServiceAccount ? (
+                            <Badge tone={status.invalid ? "error" : "ok"}>
+                                {status.invalid ? "Invalid key" : "Connected"}
+                            </Badge>
+                        ) : (
+                            <Badge>Not configured</Badge>
+                        )
+                    }
+                >
+                    <div className="space-y-4">
+                        <div
+                            className={`adm-notice ${
+                                status?.hasServiceAccount
+                                    ? status.invalid
+                                        ? "adm-notice-error"
+                                        : "adm-notice-ok"
+                                    : ""
+                            }`}
                         >
-                            {savingKey ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaFloppyDisk aria-hidden="true" />}
-                            Save key
-                        </button>
-                        {status?.hasServiceAccount && (
+                            {status?.hasServiceAccount
+                                ? status.invalid
+                                    ? "Stored service account key is invalid or could not be parsed."
+                                    : `Configured service account: ${status.email}`
+                                : "No Google Indexing API service account configured yet."}
+                        </div>
+
+                        <Field
+                            label="Service account JSON key"
+                            help="Paste the JSON credentials for a service account granted Owner access in Google Search Console."
+                            id="google-sa-json"
+                        >
+                            <textarea
+                                value={keyInput}
+                                onChange={(e) => setKeyInput(e.target.value)}
+                                rows={6}
+                                placeholder='{"type": "service_account", "client_email": "…"}'
+                                className="adm-input font-mono"
+                            />
+                        </Field>
+
+                        <div className="flex flex-wrap gap-2">
                             <button
                                 type="button"
-                                onClick={onClearKey}
-                                disabled={savingKey}
-                                className="adm-btn adm-btn-danger"
+                                onClick={() => {
+                                    onSaveKey(keyInput);
+                                    setKeyInput("");
+                                }}
+                                disabled={savingKey || !keyInput.trim()}
+                                className="adm-btn adm-btn-primary"
                             >
-                                <FaTrash aria-hidden="true" /> Remove key
+                                {savingKey ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaFloppyDisk aria-hidden="true" />}
+                                Save key
                             </button>
+                            {status?.hasServiceAccount && (
+                                <button
+                                    type="button"
+                                    onClick={onClearKey}
+                                    disabled={savingKey}
+                                    className="adm-btn adm-btn-danger"
+                                >
+                                    <FaTrash aria-hidden="true" /> Remove key
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-between gap-4 border-t border-[var(--hairline)] pt-4">
+                            <div className="min-w-0">
+                                <p className="adm-label">Auto-ping on content changes</p>
+                                <p className="adm-help">
+                                    Notify Google automatically when blogs, projects, apps, or site navigation change.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={indexing?.autoPing === true}
+                                aria-label="Auto-ping on content changes"
+                                disabled={savingKey || !status?.hasServiceAccount}
+                                onClick={() => onToggleAutoPing(!(indexing?.autoPing === true))}
+                                className="adm-switch"
+                            />
+                        </div>
+                    </div>
+                </Panel>
+
+                <Panel title="Request indexing" className="adm-side">
+                    <div className="space-y-4">
+                        <Field
+                            label="URLs to submit (one per line)"
+                            help="Pre-filled with your audited public URLs. Edit or replace before submitting."
+                            id="indexing-urls"
+                        >
+                            <textarea
+                                value={urlText}
+                                onChange={(e) => setUrlText(e.target.value)}
+                                rows={6}
+                                placeholder="https://example.com/blogs/my-post"
+                                className="adm-input font-mono"
+                            />
+                        </Field>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-[12rem_minmax(0,1fr)] items-end gap-3">
+                            <Field label="Notification type" id="indexing-type">
+                                <select value={type} onChange={(e) => setType(e.target.value)} className="adm-input">
+                                    <option value="URL_UPDATED">URL updated</option>
+                                    <option value="URL_DELETED">URL deleted</option>
+                                </select>
+                            </Field>
+                            <button
+                                type="button"
+                                onClick={() => onPing(linesToArray(urlText), type)}
+                                disabled={pinging || !status?.hasServiceAccount}
+                                className="adm-btn adm-btn-primary"
+                            >
+                                {pinging ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaPaperPlane aria-hidden="true" />}
+                                {pinging ? "Submitting…" : "Ping Google"}
+                            </button>
+                        </div>
+
+                        {!status?.hasServiceAccount && (
+                            <p className="adm-help">Configure a Google service account on the left before submitting URLs.</p>
                         )}
                     </div>
-
-                    <div className="flex items-center justify-between gap-4 border-t border-[var(--hairline)] pt-4">
-                        <div className="min-w-0">
-                            <p className="adm-label">Auto-ping on content changes</p>
-                            <p className="adm-help">
-                                Notify Google automatically when blogs, projects, apps, or site navigation change.
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            role="switch"
-                            aria-checked={indexing?.autoPing === true}
-                            aria-label="Auto-ping on content changes"
-                            disabled={savingKey || !status?.hasServiceAccount}
-                            onClick={() => onToggleAutoPing(!(indexing?.autoPing === true))}
-                            className="adm-switch"
-                        />
-                    </div>
-                </div>
-            </Panel>
-
-            <Panel title="Request indexing" className="md:col-span-6">
-                <div className="space-y-4">
-                    <Field
-                        label="URLs to submit (one per line)"
-                        help="Pre-filled with your audited public URLs. Edit or replace before submitting."
-                        id="indexing-urls"
-                    >
-                        <textarea
-                            value={urlText}
-                            onChange={(e) => setUrlText(e.target.value)}
-                            rows={6}
-                            placeholder="https://example.com/blogs/my-post"
-                            className="adm-input font-mono"
-                        />
-                    </Field>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-[12rem_minmax(0,1fr)] items-end gap-3">
-                        <Field label="Notification type" id="indexing-type">
-                            <select value={type} onChange={(e) => setType(e.target.value)} className="adm-input">
-                                <option value="URL_UPDATED">URL updated</option>
-                                <option value="URL_DELETED">URL deleted</option>
-                            </select>
-                        </Field>
-                        <button
-                            type="button"
-                            onClick={() => onPing(linesToArray(urlText), type)}
-                            disabled={pinging || !status?.hasServiceAccount}
-                            className="adm-btn adm-btn-primary"
-                        >
-                            {pinging ? <FaSpinner aria-hidden="true" className="animate-spin" /> : <FaPaperPlane aria-hidden="true" />}
-                            {pinging ? "Submitting…" : "Ping Google"}
-                        </button>
-                    </div>
-
-                    {!status?.hasServiceAccount && (
-                        <p className="adm-help">Configure a Google service account on the left before submitting URLs.</p>
-                    )}
-                </div>
-            </Panel>
+                </Panel>
+            </div>
 
             <Panel
                 flush
                 title="Indexing request log"
                 actions={<Badge>{logs?.length || 0} requests</Badge>}
-                className="md:col-span-12"
             >
                 {!logs?.length ? (
                     <EmptyState title="No indexing requests logged yet." />
