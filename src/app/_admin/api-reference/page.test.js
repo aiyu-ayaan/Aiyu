@@ -258,9 +258,52 @@ describe('AdminApiReferencePage - Code Mode Agent Tokens panel', () => {
 
         const apiPanel = document.getElementById('codemode-api');
         expect(apiPanel).toBeTruthy();
-        expect(within(apiPanel).getByText(/POST \/api\/codemode\/search/i)).toBeTruthy();
-        expect(within(apiPanel).getByText(/POST \/api\/codemode\/execute/i)).toBeTruthy();
+        expect(within(apiPanel).getByText('/api/codemode/search')).toBeTruthy();
+        expect(within(apiPanel).getByText('/api/codemode/execute')).toBeTruthy();
         expect(within(apiPanel).getByText(/codemode\.upload/i)).toBeTruthy();
         expect(within(apiPanel).getByText(/64 KB \/ 24,000 chars/i)).toBeTruthy();
+        expect(within(apiPanel).getByText(/2 concurrent \/ 30 \/ min per IP/i)).toBeTruthy();
+    });
+
+    it('renders VS Code Dark+ syntax-highlighted token spans for javascript, bash, and http blocks and preserves Copy', async () => {
+        const user = userEvent.setup();
+        const writeText = vi.fn(async () => {});
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText },
+            configurable: true,
+        });
+
+        global.fetch = vi.fn(async (url) => {
+            if (String(url) === '/api/admin/blogs/token') {
+                return { ok: true, json: async () => ({ success: true, data: { hasToken: false, last4: '', createdAt: null } }) };
+            }
+            if (String(url) === '/api/admin/codemode/tokens') {
+                return { ok: true, json: async () => ({ success: true, tokens: [] }) };
+            }
+            return { ok: false, json: async () => ({ success: false }) };
+        });
+
+        renderPage();
+
+        const panel = document.getElementById('codemode-tokens');
+        await waitFor(() =>
+            expect(within(panel).getByText(/no code mode agent tokens yet/i)).toBeTruthy()
+        );
+
+        const apiPanel = document.getElementById('codemode-api');
+        for (const lang of ['http', 'bash', 'javascript']) {
+            const block = apiPanel.querySelector(`[data-code-lang="${lang}"]`);
+            expect(block).toBeTruthy();
+            const tokenSpans = block.querySelectorAll('span.token');
+            expect(tokenSpans.length).toBeGreaterThan(0);
+            const coloredSpans = Array.from(tokenSpans).filter((el) => Boolean(el.style.color));
+            expect(coloredSpans.length).toBeGreaterThan(0);
+        }
+
+        const jsBlock = apiPanel.querySelector('[data-code-lang="javascript"]');
+        expect(jsBlock.textContent).toContain('codemode.request');
+        await user.click(within(jsBlock).getByRole('button', { name: /copy/i }));
+        expect(writeText).toHaveBeenCalledTimes(1);
+        expect(writeText.mock.calls[0][0]).toContain('codemode.request');
     });
 });

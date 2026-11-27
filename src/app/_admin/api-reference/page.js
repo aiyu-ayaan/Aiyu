@@ -2,16 +2,47 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FaCopy, FaKey, FaMagnifyingGlass, FaRotate, FaTrashCan } from 'react-icons/fa6';
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
+import http from 'react-syntax-highlighter/dist/esm/languages/prism/http';
+import javascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, EmptyState, Field, Loading, PageHeader, Panel } from '@/app/components/admin/ui';
 import '@/app/styles/admin-system.css';
 
+SyntaxHighlighter.registerLanguage('javascript', javascript);
+SyntaxHighlighter.registerLanguage('js', javascript);
+SyntaxHighlighter.registerLanguage('bash', bash);
+SyntaxHighlighter.registerLanguage('sh', bash);
+SyntaxHighlighter.registerLanguage('http', http);
+SyntaxHighlighter.registerLanguage('json', json);
+
+const CODE_BLOCK_CUSTOM_STYLE = {
+    margin: 0,
+    padding: '0.875rem 1rem',
+    background: '#1e1e1e',
+    fontSize: '0.8125rem',
+    lineHeight: 1.6,
+    fontFamily: 'var(--adm-mono)',
+};
+
+const CODE_TAG_PROPS = {
+    style: {
+        fontFamily: 'var(--adm-mono)',
+        background: 'transparent',
+    },
+};
+
 function ApiCodeBlock({ code, language = 'text' }) {
     const [copied, setCopied] = useState(false);
+    const rawCode = String(code || '');
+    const normalizedLanguage = String(language || 'text').toLowerCase();
 
     const handleCopy = async () => {
         try {
-            await navigator.clipboard.writeText(String(code || ''));
+            await navigator.clipboard.writeText(rawCode);
             setCopied(true);
             setTimeout(() => setCopied(false), 1200);
         } catch (error) {
@@ -20,14 +51,29 @@ function ApiCodeBlock({ code, language = 'text' }) {
     };
 
     return (
-        <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
+        <div
+            className="overflow-hidden rounded-[10px] border border-[var(--hairline)] bg-[#1e1e1e]"
+            data-code-lang={normalizedLanguage}
+        >
+            <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-[#252526] px-3 py-1.5">
                 <Badge>{language}</Badge>
-                <button type="button" onClick={handleCopy} className="adm-btn adm-btn-quiet">
+                <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="adm-btn adm-btn-quiet !min-h-7 !px-2.5 !py-1 !text-xs text-[#d4d4d4] hover:text-white"
+                >
                     <FaCopy aria-hidden="true" /> {copied ? 'Copied' : 'Copy'}
                 </button>
             </div>
-            <pre className="adm-code whitespace-pre-wrap">{String(code || '')}</pre>
+            <SyntaxHighlighter
+                language={normalizedLanguage}
+                style={vscDarkPlus}
+                wrapLongLines
+                customStyle={CODE_BLOCK_CUSTOM_STYLE}
+                codeTagProps={CODE_TAG_PROPS}
+            >
+                {rawCode}
+            </SyntaxHighlighter>
         </div>
     );
 }
@@ -826,66 +872,127 @@ Content-Type: application/json`;
                             }
                         >
                             <div className="space-y-4">
-                                <p className="adm-help">
-                                    Agents send an <code className="adm-code">async () =&gt; {'{ ... }'}</code>{' '}
-                                    JavaScript snippet in{' '}
-                                    <code className="adm-code">{'{ "code": "..." }'}</code> to inspect the
-                                    scope-filtered OpenAPI catalog or call allow-listed admin routes inside an
-                                    isolated sandbox. Full agent docs live at{' '}
-                                    <code className="adm-code">/.well-known/agent-skills/aiyu-codemode/SKILL.md</code>{' '}
-                                    and <code className="adm-code">/auth.md</code>.
-                                </p>
+                                <div className="space-y-2 text-sm leading-relaxed text-[var(--text-secondary)]">
+                                    <p>
+                                        Agents send an{' '}
+                                        <code className="adm-code whitespace-nowrap">
+                                            async () =&gt; {'{ ... }'}
+                                        </code>{' '}
+                                        JavaScript snippet in{' '}
+                                        <code className="adm-code whitespace-nowrap">
+                                            {'{ "code": "..." }'}
+                                        </code>{' '}
+                                        to inspect the scope-filtered OpenAPI catalog or call allow-listed
+                                        admin routes inside an isolated sandbox.
+                                    </p>
+                                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                                        <span>Agent docs:</span>
+                                        <code className="adm-code break-all">
+                                            /.well-known/agent-skills/aiyu-codemode/SKILL.md
+                                        </code>
+                                        <span>and</span>
+                                        <code className="adm-code whitespace-nowrap">/auth.md</code>
+                                    </p>
+                                </div>
 
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)] p-3 space-y-2">
+                                <div className="grid gap-4 lg:grid-cols-2">
+                                    <div className="flex h-full flex-col rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)] p-4 space-y-3">
                                         <p className="font-semibold text-sm text-[var(--text-bright)]">
                                             Endpoints &amp; sandbox globals
                                         </p>
-                                        <ul className="space-y-1.5 text-xs text-[var(--text-secondary)]">
-                                            <li>
-                                                <code className="adm-code">POST /api/codemode/search</code> — exposes{' '}
-                                                <code className="adm-code">codemode.spec()</code> only.
-                                            </li>
-                                            <li>
-                                                <code className="adm-code">POST /api/codemode/execute</code> — exposes{' '}
-                                                <code className="adm-code">codemode.spec()</code>,{' '}
-                                                <code className="adm-code">
-                                                    codemode.request({'{ method, path, query, body }'})
-                                                </code>
-                                                , and (<code className="adm-code">write</code> scope){' '}
-                                                <code className="adm-code">
-                                                    codemode.upload({'{ name, type, base64 }'})
-                                                </code>
-                                                .
-                                            </li>
-                                            <li>
-                                                No <code className="adm-code">fetch</code>,{' '}
-                                                <code className="adm-code">process</code>,{' '}
-                                                <code className="adm-code">require</code>, filesystem, or timers.
-                                            </li>
-                                        </ul>
+                                        <div className="space-y-3 text-xs leading-relaxed text-[var(--text-secondary)]">
+                                            <div className="space-y-1.5">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <Badge tone="info">POST</Badge>
+                                                    <code className="adm-code whitespace-nowrap">
+                                                        /api/codemode/search
+                                                    </code>
+                                                </div>
+                                                <p>
+                                                    Exposes{' '}
+                                                    <code className="adm-code whitespace-nowrap">
+                                                        codemode.spec()
+                                                    </code>{' '}
+                                                    only.
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-1.5 border-t border-[var(--hairline)] pt-3">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <Badge tone="info">POST</Badge>
+                                                    <code className="adm-code whitespace-nowrap">
+                                                        /api/codemode/execute
+                                                    </code>
+                                                </div>
+                                                <ul className="space-y-1.5">
+                                                    <li>
+                                                        <code className="adm-code whitespace-nowrap">
+                                                            codemode.spec()
+                                                        </code>
+                                                    </li>
+                                                    <li>
+                                                        <code className="adm-code inline-block">
+                                                            codemode.request({'{ method, path, query, body }'})
+                                                        </code>
+                                                    </li>
+                                                    <li className="flex flex-wrap items-center gap-1.5">
+                                                        <code className="adm-code inline-block">
+                                                            codemode.upload({'{ name, type, base64 }'})
+                                                        </code>
+                                                        <span>
+                                                            (<code className="adm-code whitespace-nowrap">write</code>{' '}
+                                                            scope only)
+                                                        </span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+
+                                            <p className="border-t border-[var(--hairline)] pt-3">
+                                                Blocked:{' '}
+                                                <code className="adm-code whitespace-nowrap">fetch</code>,{' '}
+                                                <code className="adm-code whitespace-nowrap">process</code>,{' '}
+                                                <code className="adm-code whitespace-nowrap">require</code>,
+                                                filesystem, and timers.
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)] p-3 space-y-2">
+                                    <div className="flex h-full flex-col rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)] p-4 space-y-3">
                                         <p className="font-semibold text-sm text-[var(--text-bright)]">
                                             Sandbox &amp; rate limits
                                         </p>
-                                        <dl className="adm-facts">
-                                            <div>
-                                                <dt>Script / output</dt>
-                                                <dd>64 KB / 24,000 chars</dd>
+                                        <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+                                            <div className="min-w-0">
+                                                <dt className="text-xs text-[var(--text-secondary)]">
+                                                    Script / output
+                                                </dt>
+                                                <dd className="mt-0.5 font-mono text-sm text-[var(--text-bright)]">
+                                                    64 KB / 24,000 chars
+                                                </dd>
                                             </div>
-                                            <div>
-                                                <dt>Time / RAM</dt>
-                                                <dd>30 s / 128 MB</dd>
+                                            <div className="min-w-0">
+                                                <dt className="text-xs text-[var(--text-secondary)]">
+                                                    Time / RAM
+                                                </dt>
+                                                <dd className="mt-0.5 font-mono text-sm text-[var(--text-bright)]">
+                                                    30 s / 128 MB
+                                                </dd>
                                             </div>
-                                            <div>
-                                                <dt>Requests / reply</dt>
-                                                <dd>50 per run / 2 MB</dd>
+                                            <div className="min-w-0">
+                                                <dt className="text-xs text-[var(--text-secondary)]">
+                                                    Requests / reply
+                                                </dt>
+                                                <dd className="mt-0.5 font-mono text-sm text-[var(--text-bright)]">
+                                                    50 per run / 2 MB
+                                                </dd>
                                             </div>
-                                            <div>
-                                                <dt>Concurrency / rate</dt>
-                                                <dd>2 concurrent / 30 min⁻¹ IP</dd>
+                                            <div className="min-w-0">
+                                                <dt className="text-xs text-[var(--text-secondary)]">
+                                                    Concurrency / rate
+                                                </dt>
+                                                <dd className="mt-0.5 font-mono text-sm text-[var(--text-bright)]">
+                                                    2 concurrent / 30 / min per IP
+                                                </dd>
                                             </div>
                                         </dl>
                                     </div>
