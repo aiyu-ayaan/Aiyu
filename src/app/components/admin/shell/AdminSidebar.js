@@ -6,13 +6,13 @@ import { FaAnglesLeft, FaArrowUpRightFromSquare, FaRightFromBracket, FaXmark, Fa
 import { NAV_GROUPS, STAGE_META, SETTINGS_ITEM, findActiveItem } from "./navConfig";
 
 /**
- * Site brand mark. Steps through favicon sources — a custom favicon served at
- * /api/favicon, then the static /favicon.ico — and if both fail, renders a
- * "~" glyph so the brand is never a broken image.
+ * Site brand mark. Steps through favicon sources — the custom favicon at
+ * /api/favicon (only when the config says one exists, so the admin does not
+ * log a 404 on every page), then the static /favicon.ico — and if both fail,
+ * renders a "~" glyph so the brand is never a broken image.
  */
-const FAVICON_SOURCES = ["/api/favicon", "/favicon.ico"];
-
-function BrandMark() {
+function BrandMark({ custom }) {
+    const FAVICON_SOURCES = custom ? ["/api/favicon", "/favicon.ico"] : ["/favicon.ico"];
     const [mounted, setMounted] = useState(false);
     const [stage, setStage] = useState(0);
 
@@ -56,7 +56,7 @@ function NavLabel({ active, children }) {
  * is resolved by longest-prefix match so deep routes (e.g. /admin/blogs/new)
  * still light up their parent section.
  */
-export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile, onLogout, stages = {} }) {
+export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onCloseMobile, onLogout, stages = {}, customFavicon = false }) {
     const pathname = usePathname();
     const active = findActiveItem(pathname);
     const settingsActive = pathname === SETTINGS_ITEM.path;
@@ -85,7 +85,7 @@ export default function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, 
                 {/* Brand */}
                 <div className="flex items-center gap-3 h-16 px-4 border-b border-[var(--hairline)] shrink-0">
                     <Link href="/admin" aria-label="Admin dashboard" className="flex items-center gap-2 min-w-0" onClick={onCloseMobile}>
-                        <BrandMark />
+                        <BrandMark custom={customFavicon} />
                         {!collapsed && (
                             <span className="truncate font-mono text-sm font-bold text-[var(--text-bright)]">~/aiyu</span>
                         )}

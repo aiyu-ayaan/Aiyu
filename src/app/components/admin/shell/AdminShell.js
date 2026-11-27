@@ -22,6 +22,7 @@ export default function AdminShell({ children }) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [stages, setStages] = useState({});
+    const [customFavicon, setCustomFavicon] = useState(false);
 
     // Restore persisted collapse preference.
     useEffect(() => {
@@ -51,6 +52,7 @@ export default function AdminShell({ children }) {
                 const res = await fetch("/api/config", { cache: "no-store" });
                 const json = await res.json();
                 if (alive && json?.adminSectionStages) setStages(json.adminSectionStages);
+                if (alive) setCustomFavicon(Boolean(json?.hasCustomFavicon));
             } catch { /* badges are best-effort */ }
         })();
         const onChange = (e) => setStages(e.detail || {});
@@ -91,6 +93,7 @@ export default function AdminShell({ children }) {
                 onCloseMobile={() => setMobileOpen(false)}
                 onLogout={handleLogout}
                 stages={stages}
+                customFavicon={customFavicon}
             />
 
             <div className={`flex min-h-screen min-w-0 flex-col transition-[padding] duration-200 ease-out ${collapsed ? "md:pl-[76px]" : "md:pl-[264px]"}`}>
