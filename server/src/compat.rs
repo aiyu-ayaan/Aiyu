@@ -29,7 +29,7 @@ pub fn is_public_html(path: &str) -> bool {
     path == "/" || SECURED_PREFIXES.iter().any(|p| path == *p || path.strip_prefix(p).is_some_and(|r| r.starts_with('/')))
 }
 
-const AGENT_LINKS: &str = r#"</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </.well-known/openapi.json>; rel="service-desc"; type="application/openapi+json", </docs/api>; rel="service-doc"; type="text/markdown", </.well-known/oauth-protected-resource>; rel="describedby"; type="application/json", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json", </.well-known/mcp/server-card.json>; rel="describedby"; type="application/json""#;
+const AGENT_LINKS: &str = r#"</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json", </.well-known/openapi.json>; rel="service-desc"; type="application/openapi+json", </docs/api>; rel="service-doc"; type="text/markdown", </.well-known/oauth-protected-resource>; rel="describedby"; type="application/json", </.well-known/agent-skills/index.json>; rel="describedby"; type="application/json""#;
 
 /// `markdownPages` in src/proxy.js: (path, title, description, sections).
 const MARKDOWN: &[(&str, &str, &str, &[(&str, &[&str])])] = &[
@@ -41,7 +41,6 @@ const MARKDOWN: &[(&str, &str, &str, &[(&str, &[&str])])] = &[
             "Health status: /api/health",
             "OAuth protected resource metadata: /.well-known/oauth-protected-resource",
             "Agent skills index: /.well-known/agent-skills/index.json",
-            "MCP server card: /.well-known/mcp/server-card.json",
         ]),
         ("Public Resources", &["Projects: /projects", "Blogs: /blogs", "Apps: /apps", "Gallery: /gallery", "GitHub stats: /github", "Contact: /contact-us"]),
     ]),

@@ -7,7 +7,7 @@ Operational guide for AI/dev agents working in this repository.
 - Stack: Rust (Axum), Vite, React 19, Tailwind CSS 4, SQLite (`data/aiyu.db`), Framer Motion, GSAP
 - Frontend SPA: `web/` (Vite config, React Router entry, route modules in `web/src/routes/`)
 - Shared UI & libs: `src/` (`src/app/` components/contexts/hooks/styles, `src/lib/`, `src/utils/`)
-- Backend server: `server/` (Axum API, SPA & static file serving, embedded SQLite migrations in `server/migrations/`, cron runner, MCP endpoint)
+- Backend server: `server/` (Axum API, SPA & static file serving, embedded SQLite migrations in `server/migrations/`, cron runner)
 - Scripts: `scripts/` (dev runner, security checks, screenshots, recordings, perf & HyperFrames helpers)
 
 ## 2. Core Rules

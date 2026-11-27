@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { FaCopy, FaKey, FaMagnifyingGlass, FaRotate, FaTrashCan } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
 import { Badge, Field, Loading, PageHeader, Panel } from '@/app/components/admin/ui';
@@ -38,7 +37,7 @@ const sections = [
     { id: 'create-blog', label: 'Create blog post', method: 'POST', path: '/api/blogs' },
     { id: 'upload-image', label: 'Upload image', method: 'POST', path: '/api/admin/images/upload' },
     { id: 'system-prompt', label: 'System prompt', method: 'GET', path: '/api/admin/system-prompt' },
-    { id: 'ai-hub-sections', label: 'AI hub sections', method: 'REST / MCP', path: '/api/ai/*' },
+    { id: 'ai-hub-sections', label: 'AI hub sections', method: 'REST', path: '/api/ai/*' },
     { id: 'examples', label: 'Examples' },
     { id: 'notes', label: 'Notes' },
 ];
@@ -158,31 +157,6 @@ Website database context (JSON, indentation 2)
       role: 'Retrieval',
       prompt: 'Answer ONLY from the provided <context>…',
   })}'`;
-    const mcpAccept = `Content-Type: application/json
-Accept: application/json, text/event-stream`;
-    const listSkillsCurl = `curl -X POST "http://localhost:3000/api/mcp" \\
-  -H "Content-Type: application/json" \\
-  -H "Accept: application/json, text/event-stream" \\
-  -d '${JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'tools/call',
-      params: { name: 'list_ai_skills', arguments: {} },
-  })}'`;
-    const createSkillMcpCurl = `curl -X POST "http://localhost:3000/api/mcp" \\
-  -H "Authorization: Bearer YOUR_MCP_TOKEN" \\
-  -H "Content-Type: application/json" \\
-  -H "Accept: application/json, text/event-stream" \\
-  -d '${JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'tools/call',
-      params: {
-          name: 'create_ai_skill',
-          arguments: { categoryId: 'cat_motion', name: 'ScrollTrigger' },
-      },
-  })}'`;
-
     useEffect(() => {
         const handleScroll = () => {
             const visible = sections
@@ -288,12 +262,12 @@ Accept: application/json, text/event-stream`;
             <PageHeader
                 command="man api"
                 title="API reference"
-                description="REST and MCP endpoints for blog automation, image uploads, system prompt generation, and AI hub sections."
+                description="REST endpoints for blog automation, image uploads, system prompt generation, and AI hub sections."
             />
 
             <div className="adm-split">
                 <div className="adm-stack">
-                    {matchesFilter('token bearer auth key mcp blog') && (
+                    {matchesFilter('token bearer auth key blog') && (
                         <Panel
                             id="token"
                             title="API token"
@@ -305,22 +279,6 @@ Accept: application/json, text/event-stream`;
                             }
                         >
                             <div className="space-y-4">
-                                <div className="adm-notice adm-notice-info">
-                                    <p className="font-semibold text-[var(--text-bright)]">
-                                        The MCP key works here too
-                                    </p>
-                                    <p className="mt-1">
-                                        These endpoints accept either the blog API token below or the{' '}
-                                        <Link href="/admin/mcp" className="adm-link underline">
-                                            MCP write token
-                                        </Link>{' '}
-                                        as their <code className="adm-code">Authorization: Bearer &lt;token&gt;</code>{' '}
-                                        header, so you can reuse a single MCP key for blog automation. Note this is
-                                        one-way: the MCP token works on the blog APIs, but the blog token does not
-                                        authorize the MCP server.
-                                    </p>
-                                </div>
-
                                 {loading ? (
                                     <Loading label="Loading token status" rows={2} />
                                 ) : (
@@ -479,12 +437,12 @@ Accept: application/json, text/event-stream`;
                         </Panel>
                     )}
 
-                    {matchesFilter('ai hub sections skills recommendations credits prompts /api/ai mcp') && (
+                    {matchesFilter('ai hub sections skills recommendations credits prompts /api/ai') && (
                         <Panel
                             id="ai-hub-sections"
                             title="AI hub sections"
                             className="scroll-mt-24"
-                            actions={<Badge>REST + MCP</Badge>}
+                            actions={<Badge>REST</Badge>}
                         >
                             <div className="space-y-5">
                                 <p className="adm-help">
@@ -493,18 +451,14 @@ Accept: application/json, text/event-stream`;
                                     <strong className="text-[var(--text-bright)]">Recommendations</strong>,{' '}
                                     <strong className="text-[var(--text-bright)]">Free credits</strong>, and{' '}
                                     <strong className="text-[var(--text-bright)]">Prompt library</strong> — are
-                                    each independent, shareable data with their own REST and MCP CRUD. Reads are
+                                    each independent, shareable data with their own REST CRUD. Reads are
                                     public; writes take an admin session or a bearer token.
                                 </p>
 
                                 <div className="adm-notice adm-notice-warn">
                                     Write endpoints (POST, PUT, DELETE) accept either the admin session cookie or
                                     an <code className="adm-code">Authorization: Bearer &lt;token&gt;</code>{' '}
-                                    header — the{' '}
-                                    <Link href="/admin/mcp" className="adm-link underline">
-                                        MCP write token
-                                    </Link>{' '}
-                                    or the blog API token above. Reads need no auth.
+                                    header with the blog API token above. Reads need no auth.
                                 </div>
 
                                 <div className="grid gap-4 sm:grid-cols-2">
@@ -592,46 +546,6 @@ Accept: application/json, text/event-stream`;
                                     <ApiCodeBlock language="bash" code={createPromptCurl} />
                                 </div>
 
-                                <div className="space-y-3 border-t border-[var(--hairline)] pt-4">
-                                    <p className="font-semibold text-[var(--text-bright)]">
-                                        Same operations over MCP
-                                    </p>
-                                    <p className="adm-help">
-                                        Read tools (<code className="adm-code">list_ai_skills</code>,{' '}
-                                        <code className="adm-code">list_ai_recommendations</code>,{' '}
-                                        <code className="adm-code">list_ai_credits</code>,{' '}
-                                        <code className="adm-code">list_ai_prompts</code>) are public. Write tools
-                                        (<code className="adm-code">create/update/delete_ai_skill</code>,{' '}
-                                        <code className="adm-code">…_ai_recommendation</code>,{' '}
-                                        <code className="adm-code">…_ai_credit</code>,{' '}
-                                        <code className="adm-code">…_ai_prompt</code>, plus skill categories)
-                                        require the MCP write token.
-                                    </p>
-                                    <p className="adm-label">MCP request headers</p>
-                                    <ApiCodeBlock language="http" code={mcpAccept} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <p className="adm-label">List skills (MCP, no token)</p>
-                                        <div className="flex items-center gap-2">
-                                            <Badge tone="info">POST</Badge>
-                                            <code className="adm-code">/api/mcp · list_ai_skills</code>
-                                        </div>
-                                    </div>
-                                    <ApiCodeBlock language="bash" code={listSkillsCurl} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div className="flex flex-wrap items-center justify-between gap-2">
-                                        <p className="adm-label">Add a skill (MCP, requires token)</p>
-                                        <div className="flex items-center gap-2">
-                                            <Badge tone="info">POST</Badge>
-                                            <code className="adm-code">/api/mcp · create_ai_skill</code>
-                                        </div>
-                                    </div>
-                                    <ApiCodeBlock language="bash" code={createSkillMcpCurl} />
-                                </div>
                             </div>
                         </Panel>
                     )}
@@ -679,14 +593,6 @@ Accept: application/json, text/event-stream`;
                                     The system prompt endpoint returns{' '}
                                     <code className="adm-code">text/plain</code>, not JSON.
                                 </li>
-                                <li>
-                                    The blog and content APIs also accept the MCP write token (from{' '}
-                                    <Link href="/admin/mcp" className="adm-link underline">
-                                        /admin/mcp
-                                    </Link>
-                                    ) as their Bearer token, so one MCP key covers blog automation too. This is
-                                    one-way — the blog token does not authorize the MCP server.
-                                </li>
                             </ul>
                         </Panel>
                     )}
@@ -704,7 +610,7 @@ Accept: application/json, text/event-stream`;
                                     type="search"
                                     value={filterQuery}
                                     onChange={(e) => setFilterQuery(e.target.value)}
-                                    placeholder="e.g. /api/blogs, MCP, upload…"
+                                    placeholder="e.g. /api/blogs, upload…"
                                     className="adm-input pl-9"
                                 />
                             </div>

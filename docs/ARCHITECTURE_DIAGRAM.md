@@ -39,11 +39,10 @@
 │ │  - AI provider integrations, SEO audit/indexing, analytics       │ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 │ ┌──────────────────────────────────────────────────────────────────┐ │
-│ │  Static Files, Redirects, Discovery & MCP                        │ │
+│ │  Static Files, Redirects & Discovery                             │ │
 │ │  - Serves public/, uploads (/api/uploads/{file}, /uploads/)      │ │
 │ │  - Legacy URL redirects & canonical host handling                │ │
 │ │  - /robots.txt, /sitemap.xml, /ads.txt, /.well-known/*           │ │
-│ │  - /api/mcp (MCP StreamableHTTP JSON-RPC 2.0 server)             │ │
 │ │  - SQLite FTS5 full-text blog search (/api/global-search)        │ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 └─────────────────┬────────────────────────────────┬───────────────────┘
@@ -72,7 +71,7 @@ The frontend is built at compile time by Vite (`pnpm run web:build` -> `web/dist
 - **Entry & Routing**: `web/` (Vite config, TypeScript entrypoints, route metadata) + `src/` (React 19 components, pages, admin modules, hooks, utilities).
 - **Styling & Motion**: Tailwind CSS 4 (`@tailwindcss/vite`), Framer Motion, GSAP, Lenis, Three.js.
 - **Public Surfaces**: Home (scroll-driven story), About, Projects, Apps/Deployments, Blogs (Markdown + syntax highlighting), Gallery, Games, GitHub stats, AI Hub (`/ai`), Desktop OS (`/desktop`), Contact, Legal pages.
-- **Admin Panel (`/admin/*`)**: Content management, Theme studio, Analytics, Security/Sessions/Audit log, MCP configuration, Crons, SEO, Resume studio, Health/Uptime metrics, Backup & Restore.
+- **Admin Panel (`/admin/*`)**: Content management, Theme studio, Analytics, Security/Sessions/Audit log, Crons, SEO, Resume studio, Health/Uptime metrics, Backup & Restore.
 
 ---
 
@@ -145,8 +144,6 @@ Optional cutover-only service (disabled by default):
    │   │   → rate-limit middleware (writes & select reads)
    │   │   → auth check (JWT cookie or Bearer token)
    │   │   → SQLite query via sqlx pool (WAL mode)
-   │   ├─ MCP endpoint (/api/mcp)
-   │   │   → JSON-RPC 2.0 StreamableHTTP dispatch (read tools public; write tools Bearer-authed)
    │   ├─ Discovery & SEO (/robots.txt, /sitemap.xml, /.well-known/*)
    │   └─ Fallback → public/ static files or SPA 404 page (with site header)
 
@@ -200,8 +197,8 @@ Optional cutover-only service (disabled by default):
 3. **Application & Auth**:
    - Admin authentication via signed JWT sessions (or optional single-user GitHub OAuth locked to `GITHUB_ALLOWED_ID`).
    - Sensitive stored secrets encrypted at rest with a cipher derived from `JWT_SECRET`.
-   - Blog API and MCP write bearer tokens stored as SHA-256 hashes and verified in constant time.
-   - Per-IP rate limiting on write endpoints, login, global search, and MCP write calls (20/min).
+   - Blog API bearer tokens stored as SHA-256 hashes and verified in constant time.
+   - Per-IP rate limiting on write endpoints, login, and global search.
    - Security headers set by NGINX (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`).
 
 ---

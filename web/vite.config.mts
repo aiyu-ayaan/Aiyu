@@ -71,7 +71,7 @@ const routeMeta: Plugin = {
 
 type Game = { slug: string; hidden?: boolean };
 
-// The /.well-known documents (src/lib/agentDiscovery.js, mcpConfig.js). They import through the `@/` alias, so load
+// The /.well-known documents (src/lib/agentDiscovery.js). They import through the `@/` alias, so load
 // them with Vite's SSR loader. The site URL is a placeholder the Rust server swaps for SITE_URL at startup.
 async function discoveryDocs() {
   const previous = process.env.SITE_URL;
@@ -87,7 +87,6 @@ async function discoveryDocs() {
   });
   try {
     const d = await server.ssrLoadModule(`${src}/lib/agentDiscovery.js`);
-    const { DEFAULT_MCP_CONFIG } = await server.ssrLoadModule(`${src}/lib/mcpConfig.js`);
     const { defaultStudio } = await server.ssrLoadModule(`${src}/lib/resumeStudio.js`);
     const { GAMES } = await server.ssrLoadModule(`${src}/app/components/games/registry.js`);
     return {
@@ -98,11 +97,9 @@ async function discoveryDocs() {
       jwks: d.getJwks(),
       skillsIndex: d.getAgentSkillsIndex(),
       skills: d.AGENT_SKILL_ARTIFACTS,
-      mcpDefaults: DEFAULT_MCP_CONFIG,
       resumeStudio: defaultStudio(),
       authMd: d.getAuthMarkdown(),
       apiDocs: d.getApiDocsMarkdown(),
-      mcpDocs: d.getMcpDocsMarkdown(),
       games: GAMES.filter((g: Game) => !g.hidden).map((g: Game) => g.slug),
     };
   } finally {

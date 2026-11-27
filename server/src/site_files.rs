@@ -311,7 +311,6 @@ macro_rules! markdown_doc {
 
 markdown_doc!(auth_md, "authMd");
 markdown_doc!(api_docs, "apiDocs");
-markdown_doc!(mcp_docs, "mcpDocs");
 
 #[cfg(test)]
 mod tests {

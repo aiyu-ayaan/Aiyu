@@ -41,5 +41,4 @@ pnpm start
 - **[Docker Setup & Troubleshooting](DOCKER_GUIDE.md)** — Image details, compose files, volumes, healthchecks, and hardening
 - **[Architecture Diagram](ARCHITECTURE_DIAGRAM.md)** — Runtime components, request flow, and security layers
 - **[SQLite Cutover Guide](../development/docs/SQLITE_CUTOVER.md)** — Migrating an existing PostgreSQL install to SQLite
-- **[MCP & API Guide](MCP_GUIDE.md)** — Configuring `/api/mcp` for AI agents
 - **[GitHub Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki)** — Additional guides and historical notes

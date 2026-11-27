@@ -14,7 +14,6 @@ Local documentation for Aiyu (Rust/Axum + Vite/React 19 + SQLite), alongside sup
 - **[Server README](../server/README.md)** — Rust/Axum backend architecture, migrations, and CLI subcommands
 
 ### APIs, Integrations & Admin
-- **[MCP & API Integration Guide](MCP_GUIDE.md)** — Built-in `/api/mcp` StreamableHTTP server, tools, resources, prompts, and client setup
 - **[API Documentation](API_DOCUMENTATION.md)** — REST API overview
 - **[Admin Panel Manual](admin_manual.md)** — Managing content, themes, security, and backups
 - **[DNS-AID](DNS_AID.md)** — Agent discovery via DNS

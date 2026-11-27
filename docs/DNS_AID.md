@@ -12,17 +12,18 @@ this repository. This document is the source-of-truth template to apply there.
 
 ## What gets published
 
-Two well-known entrypoints under `_agents.aiyu.co.in`, each an SVCB record in
+One well-known entrypoint under `_agents.aiyu.co.in`, an SVCB record in
 **ServiceMode** (priority ≥ 1) whose target is the host that actually serves the
 agent surface (`me.aiyu.co.in`):
 
 | Owner name | Purpose | Endpoint served by this app |
 |---|---|---|
-| `_index._agents.aiyu.co.in` | Generic agent discovery index | `/.well-known/agent-skills/index.json`, `/.well-known/mcp/server-card.json` |
-| `_a2a._agents.aiyu.co.in` | Agent-to-agent / MCP endpoint | `/.well-known/mcp/server-card.json` |
+| `_index._agents.aiyu.co.in` | Generic agent discovery index | `/.well-known/agent-skills/index.json` |
 
-Both point clients at HTTPS on `me.aiyu.co.in`, which already serves the
-discovery documents (`/.well-known/*`, `/auth.md`, `/docs/api`, `/docs/mcp`).
+It points clients at HTTPS on `me.aiyu.co.in`, which already serves the
+discovery documents (`/.well-known/*`, `/auth.md`, `/docs/api`).
+
+If you published the old `_a2a._agents` record, delete it: it points at the removed MCP server card.
 
 ## Zone records (BIND / RFC 1035 presentation format)
 
@@ -36,10 +37,6 @@ _index._agents.aiyu.co.in. 3600 IN SVCB 1 me.aiyu.co.in. (
     port=443
     endpoint="/.well-known/agent-skills/index.json" )
 
-_a2a._agents.aiyu.co.in.   3600 IN SVCB 1 me.aiyu.co.in. (
-    alpn="h2,http/1.1"
-    port=443
-    endpoint="/.well-known/mcp/server-card.json" )
 ```
 
 Notes:
@@ -79,19 +76,17 @@ agents can trust the discovered endpoints:
 ```bash
 # SVCB entrypoints
 dig +short SVCB _index._agents.aiyu.co.in
-dig +short SVCB _a2a._agents.aiyu.co.in
 
 # DNSSEC chain (AD flag set on a validating resolver)
 dig +dnssec SVCB _index._agents.aiyu.co.in | grep -E 'flags:.* ad|RRSIG'
 
 # Endpoints the records point to (already served by this app)
 curl -s https://me.aiyu.co.in/.well-known/agent-skills/index.json | head
-curl -s https://me.aiyu.co.in/.well-known/mcp/server-card.json | head
 ```
 
 ## Rollout checklist
 
-- [ ] Add the two SVCB records to the `aiyu.co.in` zone at the DNS provider.
+- [ ] Add the SVCB record to the `aiyu.co.in` zone at the DNS provider.
 - [ ] Confirm `dig SVCB _index._agents.aiyu.co.in` returns the record.
 - [ ] Enable DNSSEC on the zone and publish the DS record at the registrar.
 - [ ] Confirm the AD flag is set from a validating resolver.

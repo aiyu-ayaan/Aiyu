@@ -32,7 +32,7 @@ pub struct WebApp {
     pub ai_defaults: Value,
     /// `{ presets, legacy }` from src/lib/themePresets.js (written by the Vite build).
     pub themes: Value,
-    /// The /.well-known documents and MCP card defaults (written by the Vite build), with this site's URL.
+    /// The /.well-known documents (written by the Vite build), with this site's URL.
     pub discovery: Value,
     /// `/admin/...` page patterns (`[id]` segments match anything), one per src/app/_admin page.
     admin_routes: Vec<String>,

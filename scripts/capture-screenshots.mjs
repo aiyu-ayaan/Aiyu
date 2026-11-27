@@ -19,7 +19,7 @@ const adminRoutes = NAV_ITEMS.map((item) => {
 
 // Sections that pull in slow async data (charts, live metrics, activity
 // feeds) get a longer settle time before the screenshot is taken.
-const SLOW_ADMIN_SLUGS = new Set(['dashboard', 'analytics', 'health', 'github', 'seo', 'mcp']);
+const SLOW_ADMIN_SLUGS = new Set(['dashboard', 'analytics', 'health', 'github', 'seo']);
 
 // ==========================================
 // 0. Parse .env if it exists to load credentials into process.env

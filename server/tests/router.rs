@@ -33,6 +33,9 @@ async fn unknown_paths_and_methods_are_refused() {
     for (method, uri, status) in [
         ("GET", "/api/no-such-route", 404), ("POST", "/api/no-such-route", 404), ("POST", "/api/internal/hooks", 404),
         ("GET", "/no/such/page", 404), ("POST", "/no-such-page", 404), ("PUT", "/api/admin/storage", 405), ("POST", "/blogs", 405),
+        // The removed MCP surface stays gone.
+        ("GET", "/api/mcp", 404), ("POST", "/api/mcp", 404), ("GET", "/api/admin/mcp/config", 404),
+        ("POST", "/api/admin/mcp/token", 404), ("GET", "/.well-known/mcp/server-card.json", 404),
         // The web build is missing here.
         ("GET", "/", 503),
     ] {
@@ -59,13 +62,13 @@ async fn writes_refuse_anonymous_callers() {
         ("GET", "/api/admin/ads"), ("PUT", "/api/admin/ads"), ("GET", "/api/admin/social"), ("PUT", "/api/admin/social"),
         ("GET", "/api/admin/seo/config"), ("PUT", "/api/admin/seo/config"), ("GET", "/api/admin/notifications"),
         ("PUT", "/api/admin/notifications"), ("GET", "/api/admin/blogs/token"), ("POST", "/api/admin/blogs/token"),
-        ("DELETE", "/api/admin/blogs/token"), ("GET", "/api/admin/mcp/token"), ("POST", "/api/admin/mcp/token"),
-        ("DELETE", "/api/admin/mcp/token"), ("GET", "/api/admin/crons/timezone"), ("POST", "/api/admin/crons/timezone"),
+        ("DELETE", "/api/admin/blogs/token"),
+        ("GET", "/api/admin/crons/timezone"), ("POST", "/api/admin/crons/timezone"),
         ("GET", "/api/admin/health/targets"), ("POST", "/api/admin/health/targets"), ("DELETE", "/api/admin/health/targets?id=x"),
         ("POST", "/api/upload"), ("POST", "/api/admin/images/upload"), ("GET", "/api/admin/storage"), ("GET", "/api/admin/storage/migrate"),
         ("POST", "/api/admin/storage/migrate"), ("DELETE", "/api/admin/storage/unreferenced"), ("POST", "/api/admin/migrate-gallery"),
         ("GET", "/api/admin/icons"),
-        ("GET", "/api/admin/mcp/config"), ("PUT", "/api/admin/mcp/config"), ("GET", "/api/admin/resume"),
+        ("GET", "/api/admin/resume"),
         ("GET", "/api/admin/health/metrics"), ("GET", "/api/admin/health/uptime"), ("POST", "/api/admin/health/uptime/check"),
         ("POST", "/api/admin/purge-cache"), ("PUT", "/api/admin/resume"), ("POST", "/api/admin/resume/compile"),
         ("POST", "/api/admin/resume/publish"), ("GET", "/api/admin/ai/logs"), ("GET", "/api/admin/system-prompt"),

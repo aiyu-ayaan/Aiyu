@@ -1,5 +1,5 @@
-//! The admin settings routes under `/api/admin`: ads, social metadata, SEO, notifications, API tokens, the MCP
-//! config, the cron time zone and the extra uptime targets.
+//! The admin settings routes under `/api/admin`: ads, social metadata, SEO, notifications, the blog API token, the
+//! cron time zone and the extra uptime targets.
 
 use crate::db::{Stamp};
 use axum::{
@@ -14,15 +14,14 @@ use sha2::{Digest, Sha256};
 use crate::{
     AppState,
     api::{json_status, log_error, query_map, signed_in, truthy},
-    auth, cron, pages, seo,
-    site_api::{js_string, mcp_card, merge_mcp_config},
+    cron, pages, seo,
+    site_api::js_string,
     write::{self, Kind, Singleton, Table},
 };
 
 const ADS: Singleton = Singleton { table: "Ads", timestamps: true, secrets: &[] };
 const SEO: Singleton = Singleton { table: "SeoConfig", timestamps: false, secrets: &["encryptedGoogleServiceAccount"] };
 const NOTIFICATIONS: Singleton = Singleton { table: "NotificationConfig", timestamps: true, secrets: &[] };
-const MCP: Singleton = Singleton { table: "McpConfig", timestamps: true, secrets: &["mcpTokenHash"] };
 
 const UPTIME_TARGET: Table = Table {
     name: "UptimeTarget",
@@ -404,129 +403,6 @@ pub async fn delete_blog_token(State(state): State<AppState>, headers: HeaderMap
     ok(json!({ "success": true }))
 }
 
-/// The MCP config row's id and token columns.
-async fn mcp_row(state: &AppState) -> anyhow::Result<Option<(String, Option<String>, String, Option<Stamp>)>> {
-    Ok(sqlx::query_as(r#"SELECT id, "mcpTokenHash", "mcpTokenLast4", "mcpTokenUpdatedAt" FROM "McpConfig" LIMIT 1"#)
-        .fetch_optional(&state.db)
-        .await?)
-}
-
-/// `GET /api/admin/mcp/token`
-pub async fn mcp_token(State(state): State<AppState>, headers: HeaderMap) -> Response {
-    if !signed_in(&state, &headers).await {
-        return unauthorized();
-    }
-    match mcp_row(&state).await {
-        Ok(row) => {
-            let (_, hash, last4, updated) = row.unwrap_or_default();
-            let updated = updated.map(|t| t.0.and_utc().to_rfc3339_opts(SecondsFormat::Millis, true));
-            ok(json!({ "success": true, "data": { "hasToken": hash.is_some_and(|h| !h.is_empty()), "last4": last4, "updatedAt": updated } }))
-        }
-        Err(err) => {
-            log_error("/api/admin/mcp/token", &err);
-            failure(StatusCode::INTERNAL_SERVER_ERROR, "Failed to fetch token status")
-        }
-    }
-}
-
-/// `POST /api/admin/mcp/token`: generate or rotate the MCP write token.
-pub async fn create_mcp_token(State(state): State<AppState>, req: Request) -> Response {
-    let (parts, _) = req.into_parts();
-    if !signed_in(&state, &parts.headers).await {
-        return unauthorized();
-    }
-    let (token, hash, last4) = new_token("mcp");
-    let now = Utc::now();
-    let result: anyhow::Result<bool> = async {
-        let row = mcp_row(&state).await?;
-        let sql = match &row {
-            Some(_) => r#"UPDATE "McpConfig" SET "mcpTokenHash" = $1, "mcpTokenLast4" = $2, "mcpTokenUpdatedAt" = $3, "updatedAt" = $3 WHERE id = $4"#,
-            None => r#"INSERT INTO "McpConfig" ("mcpTokenHash", "mcpTokenLast4", "mcpTokenUpdatedAt", "updatedAt", id, "createdAt") VALUES ($1, $2, $3, $3, $4, $3)"#,
-        };
-        let id = row.as_ref().map(|r| r.0.clone()).unwrap_or_else(crate::db::new_id);
-        sqlx::query(sql).bind(&hash).bind(&last4).bind(Stamp(now.naive_utc())).bind(id).execute(&state.db).await?;
-        Ok(row.and_then(|r| r.1).is_some_and(|h| !h.is_empty()))
-    }
-    .await;
-    match result {
-        Ok(rotated) => {
-            let action = if rotated { "MCP_TOKEN_ROTATED" } else { "MCP_TOKEN_CREATED" };
-            auth::audit(&state, &parts, action, "security", "MCP write token generated").await;
-            ok(json!({ "success": true, "data": { "token": token, "last4": last4, "updatedAt": now.to_rfc3339_opts(SecondsFormat::Millis, true) } }))
-        }
-        Err(err) => {
-            log_error("/api/admin/mcp/token", &err);
-            failure(StatusCode::INTERNAL_SERVER_ERROR, "Failed to generate token")
-        }
-    }
-}
-
-/// `DELETE /api/admin/mcp/token`
-pub async fn delete_mcp_token(State(state): State<AppState>, req: Request) -> Response {
-    let (parts, _) = req.into_parts();
-    if !signed_in(&state, &parts.headers).await {
-        return unauthorized();
-    }
-    let result: anyhow::Result<bool> = async {
-        let Some((id, ..)) = mcp_row(&state).await? else { return Ok(false) };
-        sqlx::query(r#"UPDATE "McpConfig" SET "mcpTokenHash" = NULL, "mcpTokenLast4" = '', "mcpTokenUpdatedAt" = NULL, "updatedAt" = $1 WHERE id = $2"#)
-            .bind(Stamp(Utc::now().naive_utc()))
-            .bind(id)
-            .execute(&state.db)
-            .await?;
-        Ok(true)
-    }
-    .await;
-    match result {
-        Ok(revoked) => {
-            if revoked {
-                auth::audit(&state, &parts, "MCP_TOKEN_REVOKED", "security", "MCP write token revoked").await;
-            }
-            ok(json!({ "success": true }))
-        }
-        Err(err) => {
-            log_error("/api/admin/mcp/token", &err);
-            failure(StatusCode::INTERNAL_SERVER_ERROR, "Failed to revoke token")
-        }
-    }
-}
-
-// ── MCP config ─────────────────────────────────────────────────────────────────────────────────────────
-
-/// The editor's reply: the merged config, the server card it publishes and the card's address.
-fn mcp_payload(web: &crate::web::WebApp, stored: &Value) -> Value {
-    let defaults = &web.discovery["mcpDefaults"];
-    let config = merge_mcp_config(stored, defaults);
-    let site = crate::web::site_url();
-    let card = mcp_card(&config, defaults, &site);
-    json!({ "success": true, "config": config, "card": card, "cardUrl": format!("{site}/.well-known/mcp/server-card.json") })
-}
-
-/// `GET /api/admin/mcp/config`
-pub async fn mcp_config(State(state): State<AppState>, req: Request) -> Response {
-    // The defaults come from the web build; without it Next answers.
-    if !signed_in(&state, req.headers()).await {
-        return unauthorized();
-    }
-    let Some(web) = state.web.clone() else { return crate::web::unavailable() };
-    let stored = pages::singleton(&state.db, MCP.table, true).await;
-    ok(mcp_payload(&web, &stored))
-}
-
-/// `PUT /api/admin/mcp/config`: the whole document, replaced.
-pub async fn put_mcp_config(State(state): State<AppState>, req: Request) -> Response {
-    let Some((_, body)) = admin_body(&state, req).await else { return unauthorized() };
-    let Some(web) = state.web.clone() else { return failure(StatusCode::INTERNAL_SERVER_ERROR, "web build missing") };
-    let Some(body) = body else { return failure(StatusCode::BAD_REQUEST, "Invalid JSON body") };
-    let normalized = object(merge_mcp_config(&body, &web.discovery["mcpDefaults"]));
-    match write::upsert_singleton(&state.db, &MCP, &normalized).await {
-        Ok(saved) => {
-            ok(mcp_payload(&web, &saved))
-        }
-        Err(err) => failed("/api/admin/mcp/config", StatusCode::BAD_REQUEST, err),
-    }
-}
-
 // ── cron time zone ─────────────────────────────────────────────────────────────────────────────────────
 
 /// `GET /api/admin/crons/timezone`
@@ -631,10 +507,10 @@ mod tests {
 
     #[test]
     fn tokens_are_prefixed_and_stored_as_their_hash() {
-        let (token, hash, last4) = new_token("mcp");
-        assert!(token.starts_with("mcp_") && token.len() == 68 && token.ends_with(&last4), "{token}");
+        let (token, hash, last4) = new_token("blg");
+        assert!(token.starts_with("blg_") && token.len() == 68 && token.ends_with(&last4), "{token}");
         assert_eq!(hash, hex::encode(Sha256::digest(token.as_bytes())));
-        assert_ne!(new_token("mcp").0, token);
+        assert_ne!(new_token("blg").0, token);
     }
 
     #[test]

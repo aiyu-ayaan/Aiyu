@@ -1,4 +1,4 @@
-/* Layout extras for the admin system screens (config, security, database, AI, MCP, ...). Builds on admin.css. */
+/* Layout extras for the admin system screens (config, security, database, AI, ...). Builds on admin.css. */
 @layer components {
   .adm-split {
     display: grid;

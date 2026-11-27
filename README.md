@@ -14,7 +14,7 @@
 
 [![home](public/screenshots/desktop-dark-home.png)](http://aiyu.co.in)
 
-A fast, self-contained developer portfolio and CMS built with **Rust (Axum)**, **Vite**, **React 19**, **Tailwind CSS 4**, and **SQLite** — engineered for **sub-10 ms responses and minimal memory overhead** with an integrated Admin Panel, Gemini AI Core, LaTeX Resume Studio, Cron Scheduler, and MCP Server.
+A fast, self-contained developer portfolio and CMS built with **Rust (Axum)**, **Vite**, **React 19**, **Tailwind CSS 4**, and **SQLite** — engineered for **sub-10 ms responses and minimal memory overhead** with an integrated Admin Panel, Gemini AI Core, LaTeX Resume Studio, and Cron Scheduler.
 
 > [!TIP]
 > **Live Site:** [aiyu.co.in](http://aiyu.co.in) · **Docs:** [Wiki](https://github.com/aiyu-ayaan/Aiyu/wiki) · [Quick Start](https://github.com/aiyu-ayaan/Aiyu/wiki/Quick-Start) · [Full Benchmarks](development/benchmark.md)
@@ -30,7 +30,7 @@ flowchart LR
     Server --> SPA["Vite + React 19 SPA"]
     Server --> DB["SQLite (aiyu.db, WAL + FTS5)"]
     Server --> Media["Native Rust WebP / HEIC Uploads"]
-    Server --> Jobs["60s Cron Engine & HTTP MCP"]
+    Server --> Jobs["60s Cron Engine"]
 ```
 
 ---
@@ -59,7 +59,7 @@ Engineered with a **native Rust + embedded SQLite runtime** for predictable low 
 - **Dual-Route Notifications:** Forward contact leads to n8n webhooks and push channels (Discord, Telegram, ntfy) simultaneously.
 - **52+ Live Themes:** One-click switching (Dracula, Tokyo Night, Nord, Catppuccin, etc.) with live token editing.
 - **Blog & Masonry Gallery:** Markdown editor with FTS5 search, Notion sync API, native Rust WebP conversion, and HEIC upload support.
-- **MCP Server & Ops Dashboard:** Built-in HTTP Model Context Protocol server, API docs, live host health metrics, and AI log analysis.
+- **Ops Dashboard:** API docs, live host health metrics, and AI log analysis.
 
 ---
 
@@ -155,7 +155,7 @@ pnpm dev                # starts Vite (:3000) + debug aiyu-server (:8080)
 ## 📁 Project Structure
 
 ```text
-├── server/        # Rust (Axum) API, SPA/static serving, SQLite migrations, cron & MCP
+├── server/        # Rust (Axum) API, SPA/static serving, SQLite migrations & cron
 ├── web/           # Vite 8 config, React Router 7 entry, route modules
 ├── src/           # Shared React 19 UI components, contexts, hooks, styles, libs
 ├── scripts/       # Dev runner, security verification, screenshots, k6 & perf bench

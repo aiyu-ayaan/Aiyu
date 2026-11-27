@@ -22,7 +22,7 @@ const BODY_LIMIT: usize = 20 * 1024 * 1024;
 
 // ── who may write ──────────────────────────────────────────────────────────────────────────────────────
 
-/// `validateBearerBlogToken`: the blog API token, or the MCP write token.
+/// `validateBearerBlogToken`: the blog API token.
 pub async fn bearer(state: &AppState, headers: &HeaderMap) -> bool {
     let value = headers.get(header::AUTHORIZATION).and_then(|v| v.to_str().ok()).unwrap_or("");
     // `split(' ')` and the first two parts, as in Node.
@@ -32,14 +32,11 @@ pub async fn bearer(state: &AppState, headers: &HeaderMap) -> bool {
         return false;
     }
     let provided = hex::encode(Sha256::digest(token.trim().as_bytes()));
-    let stored: Result<Vec<Option<String>>, _> = sqlx::query_scalar(
-        r#"SELECT * FROM (SELECT "blogApiTokenHash" FROM "Config" LIMIT 1)
-           UNION ALL SELECT * FROM (SELECT "mcpTokenHash" FROM "McpConfig" LIMIT 1)"#,
-    )
-    .fetch_all(&state.db)
-    .await;
+    let stored: Result<Option<Option<String>>, _> = sqlx::query_scalar(r#"SELECT "blogApiTokenHash" FROM "Config" LIMIT 1"#)
+        .fetch_optional(&state.db)
+        .await;
     match stored {
-        Ok(hashes) => hashes.into_iter().flatten().any(|h| constant_time_eq(&h.to_ascii_lowercase(), &provided)),
+        Ok(hash) => hash.flatten().is_some_and(|h| constant_time_eq(&h.to_ascii_lowercase(), &provided)),
         Err(err) => {
             tracing::warn!(error = %err, "token lookup failed");
             false

@@ -15,7 +15,6 @@ pub mod api;
 pub mod auth;
 pub mod legal;
 pub mod limit;
-pub mod mcp;
 pub mod misc;
 pub mod net;
 pub mod notify;
@@ -172,8 +171,6 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/admin/seo/config", put(settings::put_seo_config))
         .route("/api/admin/notifications", put(settings::put_notifications))
         .route("/api/admin/blogs/token", post(settings::create_blog_token).delete(settings::delete_blog_token))
-        .route("/api/admin/mcp/token", post(settings::create_mcp_token).delete(settings::delete_mcp_token))
-        .route("/api/admin/mcp/config", put(settings::put_mcp_config))
         .route("/api/admin/crons/timezone", post(settings::save_timezone))
         .route("/api/admin/health/targets", post(settings::create_target).delete(settings::delete_target))
         .route("/api/admin/security/sessions/{id}/revoke", post(admin_security::revoke))
@@ -199,7 +196,6 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/admin/resume", put(misc::save_resume))
         .route("/api/admin/resume/compile", post(misc::compile))
         .route("/api/admin/resume/publish", post(misc::publish))
-        .route("/api/mcp", post(mcp::post_mcp).delete(mcp::delete_mcp))
         .route("/api/admin/ai/config", put(ai_core::put_config))
         .route("/api/admin/ai/models", post(ai_core::discover_models))
         .route("/api/admin/ai/validate-provider", post(ai_core::validate_provider))
@@ -253,7 +249,6 @@ pub fn router(state: AppState) -> Router {
     let documents = Router::new()
         .route("/auth.md", get(site_files::auth_md))
         .route("/docs/api", get(site_files::api_docs))
-        .route("/docs/mcp", get(site_files::mcp_docs))
         .layer(axum::middleware::from_fn(compat::canonical_host));
 
     Router::new()
@@ -274,8 +269,6 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/seo/audit", get(seo_admin::audit))
         .route("/api/admin/notifications", get(admin_settings::notifications))
         .route("/api/admin/blogs/token", get(admin_settings::blog_token))
-        .route("/api/admin/mcp/token", get(admin_settings::mcp_token))
-        .route("/api/admin/mcp/config", get(admin_settings::mcp_config))
         .route("/api/admin/crons/timezone", get(admin_settings::timezone))
         .route("/api/admin/health/targets", get(admin_settings::targets))
         .route("/api/admin/security/audit", get(admin_security::audit_log))
@@ -300,7 +293,6 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/ai/config", get(ai_core::config))
         .route("/api/admin/ai/models", get(ai_core::models))
         .route("/api/admin/system-prompt", get(misc::system_prompt))
-        .route("/api/mcp", get(mcp::get_mcp).options(mcp::options_mcp))
         .route("/api/uploads/{filename}", get(uploads::serve))
         // Reads.
         .route("/api/about", get(api::about))
@@ -350,7 +342,6 @@ pub fn router(state: AppState) -> Router {
         .route("/.well-known/jwks.json", get(site_api::jwks))
         .route("/.well-known/agent-skills/index.json", get(site_api::skills_index))
         .route("/.well-known/agent-skills/{skill}/SKILL.md", get(site_api::skill_md))
-        .route("/.well-known/mcp/server-card.json", get(site_api::mcp_server_card))
         .merge(web_assets)
         .merge(site_static::uploads(&state))
         .fallback(site_static::fallback)

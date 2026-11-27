@@ -3,7 +3,7 @@ import {
     FaHeading, FaShareNodes, FaEnvelope, FaPalette, FaGithub, FaSliders,
     FaDatabase, FaTerminal, FaRobot, FaServer, FaHardDrive, FaCode,
     FaGoogle, FaClock, FaBell, FaChartLine, FaMagnifyingGlass,
-    FaShieldHalved, FaGauge, FaPlug, FaWandMagicSparkles,
+    FaShieldHalved, FaGauge, FaWandMagicSparkles,
     FaGear, FaFileLines, FaShareFromSquare, FaDesktop, FaScaleBalanced,
 } from "react-icons/fa6";
 
@@ -86,7 +86,6 @@ export const NAV_GROUPS = [
         label: "Developer",
         items: [
             { label: "AI Core", description: "Neural settings", icon: FaRobot, path: "/admin/ai", accent: "cyan" },
-            { label: "MCP Server", description: "Model Context Protocol", icon: FaPlug, path: "/admin/mcp", accent: "indigo" },
             { label: "API Reference", description: "Docs & tokens", icon: FaCode, path: "/admin/api-reference", accent: "fuchsia" },
         ],
     },

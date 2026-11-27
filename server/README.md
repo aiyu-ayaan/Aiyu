@@ -17,13 +17,12 @@ and runs the scheduled tasks. Plan and progress: `development/TODO.md`.
 | AI Hub writes | skill categories, skills, recommendations, credits, prompts, `/api/ai/seed` |
 | Contact form | `/api/contact/message`: the public `POST` (with notifications and the n8n webhook), the admin `GET` and `DELETE` |
 | Notifications, previews | `/api/admin/notifications/test`, `/api/og-preview` (public hosts only) |
-| Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `mcp/{config,token}`, `crons`, `crons/{id}`, `crons/{id}/run`, `crons/{env,logs,preview,timezone}`, `health/targets`, `analytics`, `security/*` |
-| Crawler and agent files | `robots.txt`, `sitemap.xml`, `ads.txt`, `auth.md`, `/docs/api`, `/docs/mcp` |
+| Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `crons`, `crons/{id}`, `crons/{id}/run`, `crons/{env,logs,preview,timezone}`, `health/targets`, `analytics`, `security/*` |
+| Crawler and agent files | `robots.txt`, `sitemap.xml`, `ads.txt`, `auth.md`, `/docs/api` |
 | Uploads and storage | `/api/upload`, `/api/uploads/{file}`, `/api/admin/{images/upload,icons,storage,storage/migrate,storage/unreferenced,migrate-gallery}`. HEIC needs the system `libheif1` (loaded at run time) |
 | Health, resume, misc | `/api/admin/{health/metrics,health/uptime,health/uptime/check,purge-cache,resume,resume/compile,resume/publish,ai/logs,system-prompt}` |
 | AI Core | `/api/admin/ai/{config,models,validate-provider,text,generate}`, `/api/admin/health/analyze` |
 | SEO tools | `/api/admin/seo/{audit,crawl,fix,index}`; indexing pings after content writes |
-| MCP | `/api/mcp` |
 | Backup | `GET /api/admin/export`: rows and files stream into the zip, about 10 MB of memory whatever the data size |
 | Restore, Google Drive | `/api/admin/import`, `/api/admin/gdrive/*`: everything goes through temporary files (`BACKUP_TMP_DIR`) |
 | Static | `/_app/*` (one-year immutable cache), `public/` files, `/uploads/*` |
@@ -36,7 +35,7 @@ Responses are compressed (brotli, gzip; zips, PDFs, fonts and video are skipped)
 - Writes need the admin `session` cookie. A valid token is not enough: its `Session` row must exist and not be
   revoked or expired.
 - `POST /api/blogs` and the AI Hub writes (including `/api/ai/layout` and `/api/ai/seed`) also accept
-  `Authorization: Bearer <token>`, the blog API token or the MCP write token.
+  `Authorization: Bearer <token>`, the blog API token.
 - `/api/analytics/track` and sign-in are public.
 - `limited_api()` in `src/lib.rs` applies the API rate limit: add every new `POST`, `PUT`, `PATCH` or `DELETE`
   route there.
@@ -62,7 +61,6 @@ Search-engine pings run after the reply (`indexing.rs`) and never fail a write.
 | `uploads.rs`, `images.rs`, `heif.rs`, `storage.rs` | uploads, WebP conversion and thumbnails, HEIC through libheif, cleanup and migration of files |
 | `health.rs`, `misc.rs` | server metrics, uptime checks, cache purge, Resume Studio, AI log, system prompt |
 | `restore.rs`, `drive.rs` | restore of backups, Google Drive |
-| `mcp.rs` | the MCP endpoint: tools, resources, prompts |
 | `ai_core.rs`, `ai_modes.rs` | AI settings, provider calls, writing modes, captions, health analyzer |
 | `seo_admin.rs`, `indexing.rs` | SEO audit, crawl and fixer; Google Indexing API and automatic pings |
 | `export.rs` | backup zip |
