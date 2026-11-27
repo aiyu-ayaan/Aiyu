@@ -1,5 +1,11 @@
 # Changelog
 
+## [7.0.1](https://github.com/aiyu-ayaan/Aiyu/compare/v7.0.0...v7.0.1) (2026-11-27)
+
+### Bug Fixes
+
+* Stop the crawler HTML from flashing unstyled before the page loads
+
 ## [7.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v6.1.0...v7.0.0) (2026-11-27)
 
 ### ⚠ BREAKING CHANGES
