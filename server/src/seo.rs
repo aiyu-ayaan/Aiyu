@@ -5,9 +5,10 @@ use serde_json::{Map, Value, json};
 
 use crate::api::truthy;
 
-/// Mirrors DEFAULT_DISALLOW.
-const DISALLOW: [&str; 9] =
-    ["/admin", "/api/admin", "/api/auth/login", "/api/auth/logout", "/api/config", "/*.json$", "/*?", "/blog/", "/deployments/"];
+/// Mirrors DEFAULT_DISALLOW, without the old /blog/ and /deployments/ prefixes: they redirect, and a blocked
+/// redirect leaves the old URL stuck in Search as "Blocked by robots.txt".
+const LEGACY_DISALLOW: [&str; 2] = ["/blog/", "/deployments/"];
+const DISALLOW: [&str; 7] = ["/admin", "/api/admin", "/api/auth/login", "/api/auth/logout", "/api/config", "/*.json$", "/*?"];
 
 /// SOCIAL_PAGES keys.
 const SOCIAL_PAGES: [&str; 8] = ["/", "/about-me", "/projects", "/apps", "/gallery", "/github", "/contact-us", "/ai"];
@@ -28,7 +29,13 @@ pub fn merge_seo_config(stored: &Value) -> Value {
     let mut robots = object(&json!({ "rules": default_rules, "extraSitemaps": [] }));
     robots.extend(object(&stored["robots"]));
     let rules = &stored["robots"]["rules"];
-    let rules = if rules.as_array().is_some_and(|r| !r.is_empty()) { rules.clone() } else { default_rules };
+    let mut rules = if rules.as_array().is_some_and(|r| !r.is_empty()) { rules.clone() } else { default_rules };
+    // Older seeds stored the redirecting /blog/ and /deployments/ prefixes: drop them so their redirects are crawlable.
+    for rule in rules.as_array_mut().into_iter().flatten() {
+        if let Some(d) = rule["disallow"].as_array_mut() {
+            d.retain(|v| !LEGACY_DISALLOW.contains(&v.as_str().unwrap_or_default()));
+        }
+    }
     robots.insert("rules".into(), rules);
     robots.insert("extraSitemaps".into(), list(&stored["robots"]["extraSitemaps"]));
 
@@ -85,6 +92,12 @@ pub fn service_account_email(input: &Value) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stored_legacy_disallows_are_dropped() {
+        let c = merge_seo_config(&json!({ "robots": { "rules": [{ "userAgent": "*", "disallow": ["/admin", "/blog/", "/deployments/"] }] } }));
+        assert_eq!(c["robots"]["rules"][0]["disallow"], json!(["/admin"]));
+    }
 
     #[test]
     fn empty_stored_data_gives_the_defaults() {

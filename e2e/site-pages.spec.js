@@ -10,26 +10,26 @@ const PAGES = [
         const home = await (await request.get('/api/home')).json();
         if (home?.name) await expect(page.getByText(home.name, { exact: false }).first()).toBeAttached();
     }],
-    ['/about-me', /\| About Me$/, async (page, request) => {
+    ['/about-me', /^About Me \| /, async (page, request) => {
         const about = await (await request.get('/api/about')).json();
         await expect(page.getByText(about.name, { exact: false }).first()).toBeVisible();
     }],
-    ['/apps', /\| Apps$/, async (page, request) => {
+    ['/apps', /^Apps \| /, async (page, request) => {
         // Rows reveal on scroll: check they rendered, not that they are on screen.
         const [first] = await (await request.get('/api/deployments')).json();
         await expect(page.getByText(first.name, { exact: false }).first()).toBeAttached();
     }],
-    ['/projects', /\| Open Source & Community$/, async (page, request) => {
+    ['/projects', /^Open Source & Community \| /, async (page, request) => {
         const [first] = await (await request.get('/api/projects')).json();
         await expect(page.getByText(first.name, { exact: false }).first()).toBeAttached();
     }],
-    ['/gallery', /\| Gallery$/, async (page) => {
+    ['/gallery', /^Gallery \| /, async (page) => {
         await expect(page.locator('main img').first()).toBeVisible({ timeout: 15_000 });
     }],
     // Stats come from the GitHub API in the browser: only the shell is checked (the API may be rate-limited).
-    ['/github', /\| GitHub$/, async () => {}],
+    ['/github', /^GitHub \| /, async () => {}],
     // Never submitted: it writes a ContactMessage and can send real notifications.
-    ['/contact-us', /\| Contact$/, async (page) => {
+    ['/contact-us', /^Contact \| /, async (page) => {
         await expect(page.locator('form textarea').first()).toBeVisible();
     }],
 ];
@@ -61,7 +61,7 @@ test('header nav moves between ported pages and updates the title', async ({ pag
     await page.goto('/blogs');
     await page.getByRole('link', { name: '[about-me]' }).click();
     await expect(page).toHaveURL(/\/about-me$/);
-    await expect(page).toHaveTitle(/\| About Me$/);
+    await expect(page).toHaveTitle(/^About Me \| /);
     await page.getByRole('link', { name: '[blogs]' }).click();
     await expect(page).toHaveURL(/\/blogs$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Notes from the workbench.' })).toBeVisible();
@@ -72,7 +72,7 @@ for (const [kind, api] of [['projects', '/api/projects'], ['apps', '/api/deploym
         const [first] = await (await request.get(api)).json();
         const res = await page.goto(`/${kind}/${first.slug}`);
         expect(res.status()).toBe(200);
-        await expect(page).toHaveTitle(new RegExp(`\\| ${first.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`));
+        await expect(page).toHaveTitle(new RegExp(`^${first.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} — `));
         await expect(page.getByText(first.name).first()).toBeAttached();
         await expect(page.locator('script[type="application/ld+json"]')).toHaveCount(2);
 
@@ -100,14 +100,14 @@ test('/ai hub and a section sub-page render, unknown section is 404', async ({ p
     page.on('pageerror', (err) => errors.push(err.message));
 
     expect((await page.goto('/ai')).status()).toBe(200);
-    await expect(page).toHaveTitle(/\| AI Hub$/);
+    await expect(page).toHaveTitle(/^AI Hub \| /);
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 15_000 });
 
     expect((await page.goto('/ai/stack')).status()).toBe(200);
     await expect(page.locator('main h2, main h1').first()).toBeAttached();
     await page.locator('main a[href="/ai"]').first().click();
     await expect(page).toHaveURL(/\/ai$/);
-    await expect(page).toHaveTitle(/\| AI Hub$/);
+    await expect(page).toHaveTitle(/^AI Hub \| /);
 
     expect((await request.get('/ai/does-not-exist-e2e')).status()).toBe(404);
     expect(errors).toEqual([]);

@@ -61,7 +61,7 @@ const showcaseSection = {
 // The robots rules of the original hardcoded robots.js.
 const disallow = [
     '/admin', '/api/admin', '/api/auth/login', '/api/auth/logout',
-    '/api/config', '/*.json$', '/*?', '/blog/', '/deployments/',
+    '/api/config', '/*.json$', '/*?',
 ];
 
 export const SEED = {

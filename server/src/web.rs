@@ -72,11 +72,26 @@ pub async fn page(State(state): State<AppState>, req: Request) -> Response {
     let Some(web) = state.web.clone() else { return unavailable() };
     let path = req.uri().path().trim_end_matches('/').to_string();
     let site = Site::load(&state).await;
-    let (status, head) = match web.meta.get(&path) {
-        Some(m) => (StatusCode::OK, site.root_head(&m.title, &m.description)),
-        None => (StatusCode::NOT_FOUND, site.not_found_head()),
+    let (status, head, fallback) = match web.meta.get(&path) {
+        Some(m) => {
+            let mut head = Head::site(&site, &m.title, &m.description);
+            // Each cabinet is its own page: the root layout's canonical would fold them all into the home page.
+            head.canonical = format!("{}{path}", site.base_url);
+            for (k, v) in head.og.iter_mut() {
+                match *k {
+                    "og:url" => *v = head.canonical.clone(),
+                    "og:title" => *v = m.title.clone(),
+                    "og:description" => *v = m.description.clone(),
+                    _ => {}
+                }
+            }
+            head.twitter = Some((m.title.clone(), m.description.clone(), site.og_image.clone()));
+            let fallback = format!("<main><h1>{}</h1><p>{}</p></main>", escape(&m.title), escape(&m.description));
+            (StatusCode::OK, head.render(), fallback)
+        }
+        None => (StatusCode::NOT_FOUND, site.not_found_head(), String::new()),
     };
-    render(&web, &state, req.uri().path(), req.headers(), &site, status, head, json!(null), json!(null), String::new())
+    render(&web, &state, req.uri().path(), req.headers(), &site, status, head, json!(null), json!(null), fallback)
 }
 
 /// `/blogs`: port of src/app/(site)/blogs/page.js.
@@ -89,8 +104,8 @@ pub async fn blogs_index(State(state): State<AppState>, req: Request) -> Respons
     };
     let shell = pages::shell_data(&state, &site.config).await;
     let base = &site.base_url;
-    let title = format!("{} | Writing", site.base_name);
-    let description = "Every post as a plain editorial index — fast, server-rendered, no scripts. V2 edition.";
+    let title = format!("Writing | {}", site.base_name);
+    let description = "Articles on software engineering, AI and security: tutorials, deep dives and vulnerability breakdowns.";
     let mut head = Head::site(&site, &title, description);
     head.canonical = format!("{base}/blogs");
     head.og = vec![
@@ -98,6 +113,7 @@ pub async fn blogs_index(State(state): State<AppState>, req: Request) -> Respons
         ("og:description", description.into()),
         ("og:url", format!("{base}/blogs")),
         ("og:type", "website".into()),
+        ("og:image", site.og_image.clone()),
     ];
     head.json_ld.push(breadcrumb(&site, &shell, "/blogs", "Blogs", &[]));
 
@@ -131,12 +147,26 @@ pub async fn blog_detail(State(state): State<AppState>, Path(id): Path<String>, 
     let slug = s("slug").unwrap_or_else(|| id.clone());
     let content = s("content").unwrap_or_default();
     let seo_title = s("seoTitle").or_else(|| s("title")).unwrap_or_else(|| site.base_name.clone());
-    let fallback_desc: String = content.chars().take(160).collect();
-    let description = s("seoDescription").or_else(|| s("excerpt")).unwrap_or(fallback_desc);
+    // Excerpts and bodies are markdown: search snippets need plain text (Head::render cuts it to 160 chars).
+    let description = pages::strip_markdown(&s("seoDescription").or_else(|| s("excerpt")).unwrap_or_else(|| content.chars().take(400).collect()));
     let social_title = s("socialTitle").unwrap_or_else(|| seo_title.clone());
     let social_desc = s("socialDescription").unwrap_or_else(|| description.clone());
     let og_image = pages::absolute(&base, &s("socialImage").or_else(|| s("image")).unwrap_or_else(|| site.og_image.clone()));
-    let canonical = safe_canonical(&base, s("canonicalUrl").as_deref(), &format!("/blogs/{slug}"));
+    let self_url = format!("{base}/blogs/{slug}");
+    let mut canonical = safe_canonical(&base, s("canonicalUrl").as_deref(), &format!("/blogs/{slug}"));
+    if canonical != self_url {
+        // A canonical at a missing or moved post makes Google drop this page too: follow it, or point at ourselves.
+        let rest = canonical.strip_prefix(&base).unwrap_or_default();
+        let target = rest.strip_prefix("/blogs/").or_else(|| rest.strip_prefix("/blog/")).filter(|t| !t.is_empty() && !t.contains('/'));
+        canonical = match target {
+            Some(t) => match pages::blog_by_identifier(&state.db, t).await {
+                Ok(pages::BlogLookup::Found(b)) => format!("{base}/blogs/{}", b["slug"].as_str().unwrap_or(t)),
+                Ok(pages::BlogLookup::Redirect(to)) => format!("{base}{to}"),
+                _ => self_url,
+            },
+            None => self_url,
+        };
+    }
     let keywords = ["keywords", "tags"]
         .iter()
         .filter_map(|k| blog.get(*k).and_then(Value::as_array).filter(|a| !a.is_empty()))
@@ -146,7 +176,7 @@ pub async fn blog_detail(State(state): State<AppState>, Path(id): Path<String>, 
     let published = iso(blog.get("date")).or_else(|| iso(blog.get("createdAt")));
     let modified = iso(blog.get("updatedAt")).or_else(|| published.clone());
 
-    let mut head = Head::site(&site, &format!("{} | {seo_title}", site.base_name), &description);
+    let mut head = Head::site(&site, &format!("{seo_title} | {}", site.base_name), &description);
     head.keywords = keywords;
     head.robots = if blog.get("noIndex") == Some(&Value::Bool(true)) { "noindex, follow, nocache".into() } else { "index, follow".into() };
     head.googlebot = None;
@@ -168,16 +198,17 @@ pub async fn blog_detail(State(state): State<AppState>, Path(id): Path<String>, 
     if let Some(m) = &modified {
         head.og.push(("article:modified_time", m.clone()));
     }
-    head.twitter = Some((social_title, social_desc, og_image));
+    head.twitter = Some((social_title, social_desc, og_image.clone()));
     let shell = pages::shell_data(&state, &site.config).await;
     head.json_ld.push(json!({
         "@context": "https://schema.org", "@type": "BlogPosting",
         "headline": blog.get("title"), "description": description,
-        "image": s("socialImage").or_else(|| s("image")),
-        "datePublished": blog.get("createdAt"), "dateModified": blog.get("updatedAt"),
-        "author": { "@type": "Person", "name": std::env::var("NEXT_PUBLIC_AUTHOR_NAME").unwrap_or_else(|_| "Portfolio Owner".into()) },
+        "image": og_image,
+        "datePublished": published, "dateModified": modified,
+        "author": { "@type": "Person", "name": std::env::var("NEXT_PUBLIC_AUTHOR_NAME").unwrap_or_else(|_| "Portfolio Owner".into()), "url": base },
+        "publisher": { "@type": "Person", "name": site.base_name, "url": base },
         "mainEntityOfPage": { "@type": "WebPage", "@id": canonical },
-        "wordCount": content.encode_utf16().count(),
+        "wordCount": content.split_whitespace().count(),
     }));
     let title = s("title").unwrap_or_default();
     head.json_ld.push(breadcrumb(&site, &shell, "/blogs", "Blogs", &[(title.clone(), format!("/blogs/{slug}"))]));
@@ -197,7 +228,7 @@ pub struct Section {
     pub path: &'static str,
     /// Breadcrumb label when the header nav has no link for `path`.
     pub crumb: &'static str,
-    /// `${baseName} | <title>`
+    /// `<title> | ${baseName}`
     pub title: &'static str,
     pub description: &'static str,
 }
@@ -206,7 +237,7 @@ pub struct Section {
 async fn section(web: &WebApp, state: &AppState, req: &Parts, site: Site, sec: &Section, page: Value, fallback: String) -> Response {
     let social = pages::social_meta(&state.db).await;
     let shell = pages::shell_data(state, &site.config).await;
-    let mut head = section_head(&site, &social, sec.path, &format!("{} | {}", site.base_name, sec.title), sec.description, sec.path);
+    let mut head = section_head(&site, &social, sec.path, &format!("{} | {}", sec.title, site.base_name), sec.description, sec.path);
     head.json_ld.push(breadcrumb(&site, &shell, sec.path, sec.crumb, &[]));
     render(web, state, req.uri.path(), &req.headers, &site, StatusCode::OK, head.render(), shell, page, fallback)
 }
@@ -348,12 +379,12 @@ pub async fn contact(State(state): State<AppState>, req: Request) -> Response {
 }
 
 /// Head of the project/app detail pages: their own OpenGraph (no social overrides), raw image fallback chain.
-fn detail_head(site: &Site, row: &Value, canonical: &str, og_type: &str) -> Head {
-    let name = row["name"].as_str().unwrap_or_default().to_string();
+fn detail_head(site: &Site, row: &Value, canonical: &str, og_type: &str, kind: &str) -> Head {
+    let name = row["name"].as_str().unwrap_or_default().trim().to_string();
     let description: String = row["description"].as_str().filter(|d| !d.is_empty()).unwrap_or("").chars().take(160).collect();
     let pick = |v: &Value| v.as_str().map(str::trim).filter(|v| !v.is_empty()).map(str::to_string);
     let image = pick(&row["image"]).or_else(|| pick(&site.config["ogImage"])).unwrap_or_else(|| format!("{}/og-image.png", site.base_url));
-    let mut head = Head::site(site, &format!("{} | {name}", site.base_name), &description);
+    let mut head = Head::site(site, &format!("{name} — {kind} | {}", site.base_name), &description);
     head.googlebot = Some(GOOGLEBOT_DETAIL);
     head.canonical = canonical.to_string();
     head.og = vec![
@@ -412,7 +443,7 @@ pub async fn project_detail(State(state): State<AppState>, Path(id): Path<String
         }
     }
 
-    let mut head = detail_head(&site, &project, &canonical, "article");
+    let mut head = detail_head(&site, &project, &canonical, "article", "Source Code");
     let stack: Vec<Value> = project["techStack"].as_array().cloned().unwrap_or_default();
     let repo = &project["repoData"];
     let mut ld = serde_json::Map::new();
@@ -484,7 +515,7 @@ pub async fn app_detail(State(state): State<AppState>, Path(id): Path<String>, r
     // A linked product page (/<slug>) is the canonical home of the product.
     let canonical = product.as_ref().map(|p| format!("{base}{p}")).unwrap_or_else(|| app_url.clone());
 
-    let mut head = detail_head(&site, &app, &canonical, "website");
+    let mut head = detail_head(&site, &app, &canonical, "website", "App");
     let mut ld = serde_json::Map::new();
     ld.insert("@context".into(), "https://schema.org".into());
     ld.insert("@type".into(), "SoftwareApplication".into());
@@ -546,7 +577,7 @@ pub async fn ai_hub(State(state): State<AppState>, req: Request) -> Response {
     let shell = pages::shell_data(&state, &site.config).await;
     let base = site.base_url.clone();
     let url = format!("{base}/ai");
-    let title = format!("{} | AI Hub", site.base_name);
+    let title = format!("AI Hub | {}", site.base_name);
 
     let mut head = section_head(&site, &social, "/ai", &title, AI_HUB_DESCRIPTION, "/ai");
     head.keywords = AI_HUB_KEYWORDS.into();
@@ -611,7 +642,7 @@ pub async fn ai_section(State(state): State<AppState>, Path(slug): Path<String>,
     let base = site.base_url.clone();
     let url = format!("{base}/ai/{slug}");
     let heading = section["title"].as_str().filter(|t| !t.is_empty()).unwrap_or(fallback_title).to_string();
-    let title = format!("{} | {heading}", site.base_name);
+    let title = format!("{heading} | {}", site.base_name);
     // describeSection: subtitle, else title, else the fallback title; 160 chars.
     let description: String = section["subtitle"].as_str().filter(|t| !t.is_empty())
         .or(section["title"].as_str().filter(|t| !t.is_empty()))
@@ -666,7 +697,7 @@ pub async fn sitemap_page(State(state): State<AppState>, req: Request) -> Respon
     };
     let site = Site::load(&state).await;
     let shell = pages::shell_data(&state, &site.config).await;
-    let mut head = Head::site(&site, &format!("{} | HTML Sitemap", site.base_name), &format!("Complete HTML Sitemap of {} covering all projects, blogs, apps, and pages.", site.base_name));
+    let mut head = Head::site(&site, &format!("HTML Sitemap | {}", site.base_name), &format!("Complete HTML Sitemap of {} covering all projects, blogs, apps, and pages.", site.base_name));
     head.robots = "noindex, follow".into();
     head.googlebot = None;
     head.canonical = format!("{}/sitemap", site.base_url);
@@ -923,7 +954,7 @@ pub async fn legal_doc(State(state): State<AppState>, Path((raw_app, raw_doc)): 
     } else {
         head.googlebot = Some("index, follow, max-snippet:-1");
     }
-    head.og = vec![("og:title", title.clone()), ("og:description", description.clone()), ("og:url", url.clone()), ("og:site_name", site.base_name.clone()), ("og:type", "article".into())];
+    head.og = vec![("og:title", title.clone()), ("og:description", description.clone()), ("og:url", url.clone()), ("og:site_name", site.base_name.clone()), ("og:type", "article".into()), ("og:image", site.og_image.clone())];
     if let Some(m) = doc["updatedAt"].as_str().filter(|m| !m.is_empty()) {
         head.og.push(("article:modified_time", m.to_string()));
     }
@@ -1218,7 +1249,7 @@ impl Site {
         }
     }
 
-    /// Root layout metadata with only title/description overridden (the games pages).
+    /// Root layout metadata with only title/description overridden (the admin pages).
     fn root_head(&self, title: &str, description: &str) -> String {
         Head::site(self, title, description).render()
     }
@@ -1284,7 +1315,7 @@ impl Head {
         let e = escape;
         let mut h = String::with_capacity(2048);
         h.push_str(&format!("<title>{}</title>", e(&self.title)));
-        h.push_str(&format!(r#"<meta name="description" content="{}" />"#, e(&self.description)));
+        h.push_str(&format!(r#"<meta name="description" content="{}" />"#, e(&clamp_description(&self.description))));
         h.push_str(r#"<link rel="manifest" href="/site.webmanifest" />"#);
         if !self.keywords.is_empty() {
             h.push_str(&format!(r#"<meta name="keywords" content="{}" />"#, e(&self.keywords)));
@@ -1313,6 +1344,18 @@ impl Head {
         }
         h
     }
+}
+
+/// The description cut to 160 characters at a word boundary, with an ellipsis when cut.
+fn clamp_description(d: &str) -> String {
+    const MAX: usize = 160;
+    let d = d.split_whitespace().collect::<Vec<_>>().join(" ");
+    if d.chars().count() <= MAX {
+        return d;
+    }
+    let cut: String = d.chars().take(MAX - 1).collect();
+    let cut = cut.rsplit_once(' ').map_or(cut.as_str(), |(head, _)| head).trim_end_matches([',', ';', ':', '.', '—', '-', ' ']);
+    format!("{cut}…")
 }
 
 /// BreadcrumbSchema: Home, the section (labelled from the header nav when present), then `trail`.
@@ -1442,6 +1485,15 @@ pub fn script_json(v: &Value) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn descriptions_are_cut_at_a_word() {
+        assert_eq!(clamp_description("  short   text "), "short text");
+        let long = "word ".repeat(60);
+        let cut = clamp_description(&long);
+        assert!(cut.chars().count() <= 160 && cut.ends_with("word…"), "{cut}");
+        assert_eq!(clamp_description(&"x".repeat(200)).chars().count(), 160);
+    }
 
     #[test]
     fn escapes_admin_values() {
