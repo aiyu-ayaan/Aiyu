@@ -1,5 +1,36 @@
 # Changelog
 
+## [7.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v6.1.0...v7.0.0) (2026-11-27)
+
+### ⚠ BREAKING CHANGES
+
+* The site now runs on a Rust (axum) server with a Vite web bundle; the Next.js app and Node runtime are gone
+* Data is stored in SQLite (`/app/data/aiyu.db`) instead of Postgres; existing installs copy once with `aiyu-server import-postgres` (see development/docs/SQLITE_CUTOVER.md)
+* Prisma and the classic (v1) site are removed
+
+### Features
+
+* Serve every public page, API, admin route, cron job, backup/restore and Google Drive sync from Rust
+* Copy a Postgres install into SQLite with row-by-row hash verification
+* Complete admin redesign matching the public site
+* Serve robots.txt, sitemap.xml, ads.txt, /.well-known and agent documents from Rust
+
+### Bug Fixes
+
+* Require sign-in to change blogs or read contact messages
+* Stop clients from choosing their own IP; remove /api/debug-groq
+* Accept and preview HEIC/HEIF photos in the admin
+* Show the boot screen on the home page only; give the 404 page the site header
+* Do not cache missing files in nginx
+* Request /api/favicon in the admin only when a custom favicon exists
+
+### Performance
+
+* App image 546 MB to 213 MB, idle memory 282 MB to 21 MB, no separate Postgres container
+* Public pages 3x to 14x faster at p50 with 93-98% smaller payloads
+* Backup export 3.4x faster, restore 2.1x faster
+* Cut the web entry chunk from 545 to 429 KB and load the admin shell lazily
+
 ## [6.1.0](https://github.com/aiyu-ayaan/Aiyu/compare/v6.0.4...v6.1.0) (2026-11-13)
 
 ### Features
