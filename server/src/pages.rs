@@ -219,7 +219,14 @@ pub async fn entity_by_identifier(db: &Db, table: &str, prefix: &str, base: &str
             let slugless = client_rows(db, table, "WHERE slug = ''").await?;
             match slugless.into_iter().find(|r| entity_slug(r, prefix) == norm) {
                 Some(r) => r,
-                None => return Ok(Lookup::NotFound),
+                None => {
+                    // Old links to a renamed slug still reach Search and visitors: send them to the new one.
+                    let slugs: Vec<String> = sqlx::query_scalar(&format!(r#"SELECT slug FROM "{table}" WHERE slug <> ''"#)).fetch_all(db).await?;
+                    return Ok(match renamed_slug(norm, &slugs) {
+                        Some(slug) => Lookup::Redirect(format!("{base}/{slug}")),
+                        None => Lookup::NotFound,
+                    });
+                }
             }
         }
     };
@@ -228,6 +235,15 @@ pub async fn entity_by_identifier(db: &Db, table: &str, prefix: &str, base: &str
         return Ok(Lookup::Redirect(format!("{base}/{canonical}")));
     }
     Ok(Lookup::Found(row))
+}
+
+/// The one slug that extends `old` ("aiyu" -> "aiyu-2") or that `old` extends ("betweenus-e2ee-…" -> "betweenus"),
+/// at a hyphen. None when no slug or several slugs match, so an ambiguous old link stays a 404.
+pub fn renamed_slug(old: &str, slugs: &[String]) -> Option<String> {
+    let (longer, shorter) = (format!("{old}-"), |s: &str| format!("{s}-"));
+    let mut hits = slugs.iter().filter(|s| s.as_str() != old && (s.starts_with(&longer) || old.starts_with(&shorter(s))));
+    let first = hits.next()?;
+    hits.next().is_none().then(|| first.clone())
 }
 
 /// `getLegalLinksForDeployment`: the first legal app linked to the deployment, with its published documents.
@@ -514,6 +530,17 @@ pub fn absolute(base: &str, v: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn renamed_slugs_match_only_when_unique() {
+        let slugs: Vec<String> = ["aiyu-2", "betweenus", "betweenus-server", "switchboard-2"].map(String::from).to_vec();
+        assert_eq!(renamed_slug("aiyu", &slugs).as_deref(), Some("aiyu-2"));
+        assert_eq!(renamed_slug("betweenus-e2ee-real-time", &slugs).as_deref(), Some("betweenus"));
+        // Both "betweenus" and "betweenus-server" prefix it: ambiguous, so no redirect.
+        assert_eq!(renamed_slug("betweenus-server-x", &slugs), None);
+        assert_eq!(renamed_slug("nope", &slugs), None);
+        assert_eq!(renamed_slug("aiyu-2", &slugs), None);
+    }
 
     #[test]
     fn slugs_like_seo_helper() {

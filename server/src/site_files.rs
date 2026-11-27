@@ -201,7 +201,14 @@ fn slug(row: &Row, prefix: &str) -> String {
 /// Everything that comes from the database: content pages, product and legal pages, and the collections' dates.
 async fn content_routes(state: &AppState, base: &str) -> anyhow::Result<(Changed, Vec<Entry>)> {
     let rows = async |sql: &str| sqlx::query_as::<_, Row>(sql).fetch_all(&state.db).await;
-    let blogs = rows(r#"SELECT id, COALESCE(slug, ''), title, "updatedAt" FROM "Blog" WHERE published AND NOT "noIndex""#).await?;
+    // A post whose canonical names another live post is that post's duplicate: list only the canonical one.
+    let blogs = rows(
+        r#"SELECT b.id, COALESCE(b.slug, ''), b.title, b."updatedAt" FROM "Blog" b
+           WHERE b.published AND NOT b."noIndex" AND NOT EXISTS (
+               SELECT 1 FROM "Blog" o WHERE o.published AND o.slug <> '' AND o.id <> b.id AND COALESCE(b."canonicalUrl", '') <> ''
+                 AND (rtrim(b."canonicalUrl", '/') LIKE '%/blogs/' || o.slug OR rtrim(b."canonicalUrl", '/') LIKE '%/blog/' || o.slug))"#,
+    )
+    .await?;
     let projects = rows(r#"SELECT id, COALESCE(slug, ''), name, "updatedAt" FROM "Project""#).await?;
     let apps = rows(r#"SELECT id, COALESCE(slug, ''), name, "updatedAt" FROM "Deployment""#).await?;
     let latest = |r: &[Row]| r.iter().map(|r| r.3.0).max();

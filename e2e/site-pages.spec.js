@@ -117,7 +117,7 @@ test('/sitemap lists every page', async ({ page, request }) => {
     const [projects, apps, blogs] = await Promise.all(['/api/projects', '/api/deployments', '/api/blogs'].map(async (u) => request.get(u).then((r) => r.json())));
     const res = await page.goto('/sitemap');
     expect(res.status()).toBe(200);
-    await expect(page).toHaveTitle(/\| HTML Sitemap$/);
+    await expect(page).toHaveTitle(/^HTML Sitemap \| /);
     const games = 9; // visible cabinets (games.spec.js)
     const total = 9 + apps.length + projects.length + games + blogs.data.length;
     await expect(page.getByText(`${total} entries · 5 sections`)).toBeVisible();
