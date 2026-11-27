@@ -315,8 +315,22 @@ pub async fn ai_logs(State(state): State<AppState>, headers: HeaderMap) -> Respo
 /// Config fields that stay out of the prompt.
 fn sanitize(mut config: Value) -> Value {
     let Value::Object(fields) = &mut config else { return json!({}) };
-    for key in ["encryptedGithubToken", "encryptedGithubWebhookSecret", "encryptedGeminiApiKey", "encryptedGroqApiKey", "encryptedOpenRouterApiKey", "blogApiTokenHash", "blogApiTokenLast4", "blogApiTokenCreatedAt", "n8nWebhookAuthKey"] {
+    for key in [
+        "encryptedGithubToken", "encryptedGithubWebhookSecret", "encryptedGeminiApiKey", "encryptedGroqApiKey",
+        "encryptedOpenRouterApiKey", "blogApiTokenHash", "blogApiTokenLast4", "blogApiTokenCreatedAt",
+        "n8nWebhookAuthKey", "n8nWebhookUrl", "gdriveConfig",
+    ] {
         fields.shift_remove(key);
+    }
+    if let Some(Value::Object(ai)) = fields.get_mut("ai") {
+        ai.shift_remove("gatewayApiKey");
+        if let Some(Value::Array(providers)) = ai.get_mut("providers") {
+            for provider in providers {
+                if let Some(p) = provider.as_object_mut() {
+                    p.shift_remove("apiKey");
+                }
+            }
+        }
     }
     if let Some(Value::Object(favicon)) = fields.get_mut("favicon") {
         favicon.shift_remove("value");

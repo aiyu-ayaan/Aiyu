@@ -17,7 +17,8 @@ and runs the scheduled tasks. Plan and progress: `development/TODO.md`.
 | AI Hub writes | skill categories, skills, recommendations, credits, prompts, `/api/ai/seed` |
 | Contact form | `/api/contact/message`: the public `POST` (with notifications and the n8n webhook), the admin `GET` and `DELETE` |
 | Notifications, previews | `/api/admin/notifications/test`, `/api/og-preview` (public hosts only) |
-| Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `crons`, `crons/{id}`, `crons/{id}/run`, `crons/{env,logs,preview,timezone}`, `health/targets`, `analytics`, `security/*` |
+| Admin settings | `/api/admin/{ads,social,notifications}`, `seo/config`, `blogs/token`, `codemode/tokens[/{id}]`, `crons`, `crons/{id}`, `crons/{id}/run`, `crons/{env,logs,preview,timezone}`, `health/targets`, `analytics`, `security/*` |
+| Code Mode | `POST /api/codemode/search`, `POST /api/codemode/execute` (scoped `aiyu_agent_...` bearer tokens only) |
 | Crawler and agent files | `robots.txt`, `sitemap.xml`, `ads.txt`, `auth.md`, `/docs/api` |
 | Uploads and storage | `/api/upload`, `/api/uploads/{file}`, `/api/admin/{images/upload,icons,storage,storage/migrate,storage/unreferenced,migrate-gallery}`. HEIC needs the system `libheif1` (loaded at run time) |
 | Health, resume, misc | `/api/admin/{health/metrics,health/uptime,health/uptime/check,purge-cache,resume,resume/compile,resume/publish,ai/logs,system-prompt}` |
@@ -36,6 +37,10 @@ Responses are compressed (brotli, gzip; zips, PDFs, fonts and video are skipped)
   revoked or expired.
 - `POST /api/blogs` and the AI Hub writes (including `/api/ai/layout` and `/api/ai/seed`) also accept
   `Authorization: Bearer <token>`, the blog API token.
+- `POST /api/codemode/search` and `POST /api/codemode/execute` accept **only** a scoped Code Mode agent token
+  (`Authorization: Bearer aiyu_agent_...`, created on `/admin/api-reference` via `GET/POST /api/admin/codemode/tokens`
+  and revoked via `DELETE /api/admin/codemode/tokens/{id}`). Agent tokens are rejected on every other route; `write`-scope
+  mutations are allow-listed per catalog row and recorded in `AuditLog`.
 - `/api/analytics/track` and sign-in are public.
 - `limited_api()` in `src/lib.rs` applies the API rate limit: add every new `POST`, `PUT`, `PATCH` or `DELETE`
   route there.
@@ -63,6 +68,7 @@ Search-engine pings run after the reply (`indexing.rs`) and never fail a write.
 | `restore.rs`, `drive.rs` | restore of backups, Google Drive |
 | `ai_core.rs`, `ai_modes.rs` | AI settings, provider calls, writing modes, captions, health analyzer |
 | `seo_admin.rs`, `indexing.rs` | SEO audit, crawl and fixer; Google Indexing API and automatic pings |
+| `codemode/{mod,catalog,sandbox,token}.rs` | Code Mode routes (`/api/codemode/{search,execute}`), allow-listed OpenAPI catalog, `boa_engine` child sandbox, and `AgentToken` CRUD/auth |
 | `export.rs` | backup zip |
 
 `crypto.rs` and `session.rs` read values written by the former Node code (encrypted DB fields, the `session` cookie).
@@ -108,8 +114,15 @@ Reads `.env` from the working directory.
 ## Database, migrations & seeding
 
 - **SQLite (`DATABASE_PATH`, default `data/aiyu.db`)**: opened in WAL mode with FTS5 full-text search for blogs. If the file does not exist, the server creates its parent directory and initializes a new database on startup — unless `DATABASE_URL` points to PostgreSQL, in which case startup aborts so an upgraded Postgres install cannot accidentally come up empty (override with `START_EMPTY=true`).
-- **Embedded migrations (`server/migrations/`)**: SQL migrations (`0001_init.sql`) are embedded into the binary and applied automatically at startup (`db::migrate`).
+- **Embedded migrations (`server/migrations/`)**: SQL migrations (`0001_init.sql`, `0002_agent_tokens.sql`) are embedded into the binary and applied automatically at startup (`db::migrate`). The `AgentToken` table stores SHA-256 token hashes and is excluded from backup exports (`export::COLLECTIONS`).
 - **Seeding (`RUN_SEED`)**: driven by `seed.json` and AI page defaults emitted by the Vite build in `WEB_DIR`. `auto` (default) populates an empty database, `force` replaces base content (projects, apps, about, home, header, socials — destructive), and `false` disables seeding.
+
+## Code Mode sandbox
+
+Code Mode runs agent-submitted JavaScript (`async () => { ... }`) in a fresh `aiyu-server codemode-sandbox` child process powered by `boa_engine` (with `IdleModuleLoader` and no filesystem, network, env, or timer APIs).
+
+- **Endpoints**: `POST /api/codemode/search` (`codemode.spec()`), `POST /api/codemode/execute` (`codemode.spec()`, `codemode.request(...)`, and `codemode.upload(...)` for `write` tokens), plus session-only management at `GET/POST /api/admin/codemode/tokens` and `DELETE /api/admin/codemode/tokens/{id}`.
+- **Sandbox & rate limits**: 64 KB max script size, 30 s wall-clock timeout, 128 MB `RLIMIT_AS` child memory cap, 50 `codemode.request` calls per run, 2 MB router reply cap, 2 concurrent runs (HTTP 429 when full), 30 runs/min per IP, and 24,000-character output cap (`--- TRUNCATED ---`).
 
 ## CLI subcommands
 
@@ -118,6 +131,7 @@ Reads `.env` from the working directory.
 | `aiyu-server` | Run the HTTP server, apply embedded migrations, seed (per `RUN_SEED`), and start the cron runner |
 | `aiyu-server healthcheck` | Probe `http://127.0.0.1:<port>/api/health` (port from `RUST_LISTEN`) and exit `0` on 2xx; used by Docker `HEALTHCHECK` |
 | `aiyu-server import-postgres` | One-time read-only snapshot copy from Postgres (`DATABASE_URL`) into a new SQLite file (`DATABASE_PATH`), hash-verifying all 36 tables before renaming into place; requires the default `pg-import` Cargo feature (see [`development/docs/SQLITE_CUTOVER.md`](../development/docs/SQLITE_CUTOVER.md)) |
+| `aiyu-server codemode-sandbox` | Hidden internal subcommand spawned per Code Mode run; evaluates JS inside `boa_engine` over line-delimited JSON stdin/stdout |
 
 ## Checks
 

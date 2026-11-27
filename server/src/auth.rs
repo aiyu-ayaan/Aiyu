@@ -31,6 +31,23 @@ const LOGIN_WINDOW: Duration = Duration::from_secs(5 * 60);
 const LOGIN_GLOBAL_WINDOW: Duration = Duration::from_secs(10 * 60);
 
 pub async fn require_session(state: &AppState, headers: &HeaderMap) -> Result<Claims, Response> {
+    if let Some(internal) = headers
+        .get(crate::codemode::INTERNAL_AUTH_HEADER)
+        .and_then(|v| v.to_str().ok())
+    {
+        if !state.codemode_internal_secret.is_empty()
+            && constant_time_eq(internal, &state.codemode_internal_secret)
+        {
+            return Ok(Claims {
+                user: json!({ "username": "codemode" }),
+                jti: None,
+                expires: None,
+                iat: None,
+                exp: u64::MAX,
+            });
+        }
+    }
+
     let unauthorized = || (StatusCode::UNAUTHORIZED, axum::Json(serde_json::json!({ "success": false, "error": "Unauthorized" }))).into_response();
 
     let token = headers

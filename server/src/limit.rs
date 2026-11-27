@@ -67,12 +67,13 @@ pub fn header_str(headers: &HeaderMap, name: &str) -> String {
 /// (rule prefix, max requests, window) for a request, or None when the proxy does not limit it.
 fn api_rule(method: &Method, path: &str) -> Option<(&'static str, u32, Duration)> {
     const MIN: u64 = 60;
-    let rules: [(&str, Method, u32, u64); 5] = [
+    let rules: [(&str, Method, u32, u64); 6] = [
         ("/api/auth/login", Method::POST, 5, 5 * MIN),
         ("/api/auth/github", Method::GET, 10, 5 * MIN),
         ("/api/contact/message", Method::POST, 15, 5 * MIN),
         ("/api/upload", Method::POST, 60, MIN),
         ("/api/global-search", Method::GET, 60, MIN),
+        ("/api/codemode", Method::POST, 30, MIN),
     ];
     if path == "/api/health" || method == Method::OPTIONS {
         return None;

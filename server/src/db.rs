@@ -17,7 +17,10 @@ pub type Db = sqlx::SqlitePool;
 pub type Query<'q> = sqlx::query::Query<'q, Sqlite, SqliteArguments<'q>>;
 
 /// Applied in order; `PRAGMA user_version` counts the ones a database has. Never edit a released file.
-const MIGRATIONS: &[&str] = &[include_str!("../migrations/0001_init.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("../migrations/0001_init.sql"),
+    include_str!("../migrations/0002_agent_tokens.sql"),
+];
 
 /// The pool connects lazily, so this never blocks or fails on a missing file (unless `create` is set, nothing is
 /// written either).
@@ -109,6 +112,7 @@ pub enum Col {
 pub const TABLES: &[(&str, &[(&str, Col)])] = &[
     ("About", &[("id", Text), ("data", Json), ("createdAt", Time), ("updatedAt", Time)]),
     ("Ads", &[("id", Text), ("data", Json), ("createdAt", Time), ("updatedAt", Time)]),
+    ("AgentToken", &[("id", Text), ("name", Text), ("tokenHash", Text), ("lastFour", Text), ("scope", Text), ("expiresAt", Time), ("createdAt", Time), ("lastUsedAt", Time), ("revokedAt", Time)]),
     ("AiCredit", &[("id", Text), ("name", Text), ("offer", Text), ("url", Text), ("noCard", Bool), ("freeApi", Bool), ("note", Text), ("displayOrder", Int), ("createdAt", Time), ("updatedAt", Time)]),
     ("AiLog", &[("id", Text), ("provider", Text), ("model", Text), ("mode", Text), ("prompt", Text), ("response", Text), ("inputTokens", Int), ("outputTokens", Int), ("totalTokens", Int), ("createdAt", Time), ("updatedAt", Time)]),
     ("AiPage", &[("id", Text), ("data", Json), ("createdAt", Time), ("updatedAt", Time)]),

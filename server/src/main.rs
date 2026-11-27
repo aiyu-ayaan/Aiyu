@@ -4,6 +4,13 @@ use std::net::SocketAddr;
 use axum::serve::ListenerExt;
 
 fn main() -> anyhow::Result<()> {
+    // Hidden sandbox child subcommand: MUST run synchronously before Tokio starts so worker
+    // thread stacks do not consume virtual address space under RLIMIT_AS.
+    if std::env::args().nth(1).as_deref() == Some("codemode-sandbox") {
+        aiyu_server::codemode::sandbox::run_child();
+        return Ok(());
+    }
+
     // Few threads keep RSS low on a 1 GB VPS: each worker has its own stack and allocator cache.
     let workers = std::env::var("RUST_WORKERS").ok().and_then(|v| v.parse().ok()).unwrap_or(2);
     tokio::runtime::Builder::new_multi_thread()

@@ -106,7 +106,22 @@ Each of the four AI Hub sections is independently CRUD-able. Writes (POST/PUT/DE
 
 ## Protected Endpoints
 
-Admin routes under /api/admin require the site's session cookie. Agents can discover the protected resource metadata at /.well-known/oauth-protected-resource. The current production application uses cookie-based admin sessions; OAuth/OIDC metadata is published for discovery and future token-based integrations.
+Admin routes under /api/admin require the site's session cookie. Agents can discover the protected resource metadata at /.well-known/oauth-protected-resource and credential rules at ${toAbsoluteSiteUrl('/auth.md')}.
+
+## Code Mode (Agent Sandbox)
+
+AI agents can inspect and call allow-listed admin APIs through two HTTP endpoints using a scoped Code Mode agent token (\`Authorization: Bearer aiyu_agent_...\`):
+
+- \`POST /api/codemode/search\` — Runs a short JavaScript async arrow function in an isolated sandbox with \`codemode.spec()\` (the OpenAPI 3.1 document filtered to routes permitted by the token's scope).
+- \`POST /api/codemode/execute\` — Runs a short JavaScript async arrow function with \`codemode.spec()\`, \`codemode.request({ method, path, query, body })\`, and (with \`write\` scope) \`codemode.upload({ name, type, base64 })\`.
+
+Request body: \`{ "code": "async () => { ... }" }\`.
+Reply: \`{ "success": true, "result": ..., "logs": [], "truncated": false }\` (or \`{ "success": false, "error": "...", "logs": [] }\`).
+
+Code Mode tokens expire after 30 days, support \`read\` (default) or \`write\` scope, are accepted **only** on \`/api/codemode/*\`, and are created/revoked on \`/admin/api-reference\`.
+
+- Agent skill: ${toAbsoluteSiteUrl('/.well-known/agent-skills/aiyu-codemode/SKILL.md')}
+- Authentication guide: ${toAbsoluteSiteUrl('/auth.md')}
 
 ## Source Documentation
 
@@ -304,10 +319,15 @@ lives in the OAuth discovery documents linked below.
 
 - **Public reads** — All \`GET\` endpoints under \`/api\` are open. No credential
   is required. Start here; most portfolio content is readable without auth.
-- **Agent writes** — Write endpoints (\`POST\`/\`PUT\`/\`DELETE\`) under
-  \`/api/ai/*\` require a bearer token.
+- **Code Mode agent tokens** — Scoped bearer tokens (\`aiyu_agent_...\`) for
+  \`POST /api/codemode/search\` and \`POST /api/codemode/execute\`. Tokens expire
+  after **30 days**, support \`read\` (default) or \`write\` scope, and are
+  accepted **only** on \`/api/codemode/*\` (rejected with \`401\` on every other
+  route). Writes made through Code Mode are recorded in the admin audit log.
+- **Blog / AI Hub API token** — Legacy single bearer token for \`POST /api/blogs\`
+  and write endpoints (\`POST\`/\`PUT\`/\`DELETE\`) under \`/api/ai/*\`.
 - **Admin** — Routes under \`/api/admin\` require an interactive admin session
-  cookie and are not available to autonomous agents.
+  cookie and are not available to autonomous agents directly.
 
 ## Identity Types
 
@@ -316,8 +336,9 @@ lives in the OAuth discovery documents linked below.
 
 ## Credential Types
 
-- \`bearer_token\` — Presented as \`Authorization: Bearer <token>\`. This is the
-  credential agents use for write access.
+- \`bearer_token\` — Presented as \`Authorization: Bearer <token>\`. Use a
+  Code Mode agent token (\`aiyu_agent_...\`) for \`/api/codemode/*\`, or the
+  blog API token for direct \`/api/blogs\` and \`/api/ai/*\` writes.
 - \`session_cookie\` — Interactive admin sessions only.
 
 ## Registration
@@ -326,19 +347,28 @@ Aiyu does not offer dynamic client registration. Agent bearer tokens are minted
 by the site owner in the admin panel:
 
 1. Owner opens ${toAbsoluteSiteUrl('/admin/api-reference')}.
-2. Owner generates an API token and shares it with the agent operator out of band.
-3. The agent sends the token on every write request:
+2. Owner creates a **Code Mode agent token** (choosing a name and \`read\` or
+   \`write\` scope; valid for 30 days, shown once) and shares it with the agent
+   operator out of band.
+3. The agent calls \`POST /api/codemode/search\` or \`POST /api/codemode/execute\`
+   with the token:
 
    \`\`\`http
-   POST ${base}/api/ai/skills/items
-   Authorization: Bearer <token>
+   POST ${base}/api/codemode/search
+   Authorization: Bearer aiyu_agent_<token>
    Content-Type: application/json
+
+   { "code": "async () => Object.keys(codemode.spec().paths)" }
    \`\`\`
+
+See the \`aiyu-codemode\` skill (${toAbsoluteSiteUrl('/.well-known/agent-skills/aiyu-codemode/SKILL.md')})
+and ${toAbsoluteSiteUrl('/docs/api')} for sandbox globals, limits, and examples.
 
 ## Revocation
 
-Tokens are revoked or regenerated in
-${toAbsoluteSiteUrl('/admin/api-reference')}. A revoked token is rejected immediately.
+Code Mode agent tokens and the blog API token are revoked on
+${toAbsoluteSiteUrl('/admin/api-reference')}. A revoked or expired token is
+rejected immediately.
 
 ## Claims & Scopes
 
@@ -405,6 +435,111 @@ Use this skill to navigate the Aiyu portfolio as an agent.
 
 When WebMCP is available, use the exposed navigation and search tools before scraping page internals.
 `,
+    'aiyu-codemode': `# Aiyu Code Mode
+
+Use this skill to discover and call allow-listed Aiyu admin APIs through the Rust Code Mode sandbox instead of per-endpoint tool schemas.
+
+## Endpoints
+
+\`\`\`http
+POST /api/codemode/search
+POST /api/codemode/execute
+Authorization: Bearer aiyu_agent_<token>
+Content-Type: application/json
+
+{ "code": "async () => { ... }" }
+\`\`\`
+
+- Reply on success: \`{ "success": true, "result": <value>, "logs": [...], "truncated": false }\`
+- Reply on error: \`{ "success": false, "error": "<message>", "logs": [...] }\`
+
+## Authentication & Scopes
+
+- Tokens use the \`aiyu_agent_\` prefix, expire after **30 days**, and work **only** on \`POST /api/codemode/search\` and \`POST /api/codemode/execute\`.
+- Tokens are minted and revoked on \`/admin/api-reference\` (see \`/auth.md\`).
+- \`read\` scope (default): allows read-only catalog routes with sensitive secrets redacted.
+- \`write\` scope: allows read routes plus allow-listed write routes and media uploads. Every write is recorded in the admin audit log.
+
+## Sandbox Globals
+
+The script must evaluate to an \`async () => { ... }\` function. No network, filesystem, environment, timers, \`fetch\`, \`process\`, or \`require\` exist inside the sandbox.
+
+- \`POST /api/codemode/search\`:
+  - \`codemode.spec()\` — returns the OpenAPI 3.1 JSON document filtered to the routes your token's scope may call.
+- \`POST /api/codemode/execute\`:
+  - \`codemode.spec()\` — same scope-filtered OpenAPI 3.1 document.
+  - \`codemode.request({ method, path, query, body })\` — calls an allow-listed internal \`/api/...\` route (path must start with \`/api/\` with no \`..\`, \`//\`, \`%\`, \`?\`, or \`#\`; pass query params via \`query\`).
+  - \`codemode.upload({ name, type, base64 })\` — (\`write\` scope only) uploads a base64-encoded image through the admin image upload pipeline.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Script size | 64 KB |
+| Wall-clock timeout | 30 s |
+| Child process memory | 128 MB |
+| \`codemode.request\` calls per run | 50 |
+| Router reply size per request | 2 MB |
+| Concurrent runs | 2 (HTTP 429 when full) |
+| Rate limit | 30 runs / minute / IP |
+| Output size | 24,000 characters (then \`--- TRUNCATED ---\`) |
+
+## Examples
+
+### 1. Search the scope-filtered OpenAPI catalog (\`/api/codemode/search\`)
+
+\`\`\`js
+async () => {
+  const spec = codemode.spec();
+  return Object.entries(spec.paths)
+    .filter(([path]) => path.includes("blogs"))
+    .map(([path, ops]) => ({ path, methods: Object.keys(ops) }));
+}
+\`\`\`
+
+### 2. Read draft blog posts (\`/api/codemode/execute\`)
+
+\`\`\`js
+async () => {
+  const res = await codemode.request({
+    method: "GET",
+    path: "/api/blogs",
+    query: { all: "true" },
+  });
+  return (res.data || [])
+    .filter((post) => !post.published)
+    .map((post) => ({ id: post.id, title: post.title }));
+}
+\`\`\`
+
+### 3. Upload an image and create a draft post (\`/api/codemode/execute\`, \`write\` scope)
+
+\`\`\`js
+async () => {
+  const uploaded = await codemode.upload({
+    name: "cover.png",
+    type: "image/png",
+    base64: "<base64-image-bytes>",
+  });
+  return await codemode.request({
+    method: "POST",
+    path: "/api/blogs",
+    body: {
+      title: "Code Mode Draft",
+      content: "## Hello\\nCreated from Code Mode.",
+      image: uploaded.data.url,
+      published: false,
+    },
+  });
+}
+\`\`\`
+`,
+};
+
+const AGENT_SKILL_DESCRIPTIONS = {
+    'aiyu-api-discovery': 'Discover and consume Aiyu public portfolio APIs.',
+    'aiyu-site-navigation': 'Navigate Aiyu portfolio pages and browser-exposed tools.',
+    'aiyu-codemode': 'Query and mutate allow-listed Aiyu admin APIs via Code Mode (POST /api/codemode/search and POST /api/codemode/execute).',
 };
 
 export function getAgentSkillsIndex() {
@@ -413,9 +548,7 @@ export function getAgentSkillsIndex() {
         skills: Object.entries(AGENT_SKILL_ARTIFACTS).map(([name, content]) => ({
             name,
             type: 'skill-md',
-            description: name === 'aiyu-api-discovery'
-                ? 'Discover and consume Aiyu public portfolio APIs.'
-                : 'Navigate Aiyu portfolio pages and browser-exposed tools.',
+            description: AGENT_SKILL_DESCRIPTIONS[name] || name,
             url: toAbsoluteSiteUrl(`/.well-known/agent-skills/${name}/SKILL.md`),
             digest: `sha256:${createHash('sha256').update(content).digest('hex')}`,
         })),

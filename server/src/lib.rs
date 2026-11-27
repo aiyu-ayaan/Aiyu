@@ -13,6 +13,7 @@ pub mod ai_modes;
 pub mod analytics;
 pub mod api;
 pub mod auth;
+pub mod codemode;
 pub mod legal;
 pub mod limit;
 pub mod misc;
@@ -81,6 +82,11 @@ pub struct AppState {
     pub http: reqwest::Client,
     /// package.json version, shown in the footer.
     pub package_version: Option<String>,
+    /// Code Mode sandbox runner pool (concurrency cap + child binary config).
+    pub codemode: codemode::sandbox::SandboxPool,
+    /// Per-process secret accepted by `auth::require_session` for in-process Code Mode calls.
+    /// Stripped from every inbound HTTP request by the outermost router layer; never passed to children.
+    pub codemode_internal_secret: String,
 }
 
 impl AppState {
@@ -98,6 +104,7 @@ impl AppState {
             .ok()
             .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok())
             .and_then(|v| v.get("version").and_then(|v| v.as_str()).map(str::to_string));
+        let secret_bytes: [u8; 32] = rand::random();
         Ok(Self {
             http: reqwest::Client::builder().user_agent("Portfolio-App").build()?,
             package_version,
@@ -106,6 +113,8 @@ impl AppState {
             cipher: crypto::FieldCipher::new(&config.jwt_secret),
             sessions: session::SessionKeys::new(&config.jwt_secret),
             config,
+            codemode: codemode::sandbox::SandboxPool::default(),
+            codemode_internal_secret: hex::encode(secret_bytes),
         })
     }
 }
@@ -207,11 +216,30 @@ fn limited_api(state: &AppState) -> Router<AppState> {
         .route("/api/admin/seo/fix", post(seo_admin::fix))
         // A backup can be hundreds of megabytes; the handler streams it to disk and enforces its own limit.
         .route("/api/admin/import", post(restore::import).layer(DefaultBodyLimit::disable()))
+        .route("/api/admin/codemode/tokens", post(codemode::token::create_token))
+        .route("/api/admin/codemode/tokens/{id}", delete(codemode::token::revoke_token))
+        .route("/api/codemode/search", post(codemode::search))
+        .route("/api/codemode/execute", post(codemode::execute))
         .route_layer(axum::middleware::from_fn_with_state(state.clone(), limit::api))
+}
+
+/// Outermost inbound middleware: strips the internal Code Mode header from every external request.
+async fn strip_internal_header(
+    mut req: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> axum::response::Response {
+    req.headers_mut().remove(codemode::INTERNAL_AUTH_HEADER);
+    next.run(req).await
 }
 
 /// Every route; what none of them claims goes to `site_static::fallback`.
 pub fn router(state: AppState) -> Router {
+    inner_router(state).layer(axum::middleware::from_fn(strip_internal_header))
+}
+
+/// Full application router without the external strip-internal-header layer (used for in-process
+/// `codemode.request` dispatches that carry the per-process secret header).
+pub(crate) fn inner_router(state: AppState) -> Router {
     // Vite assets: content-hashed, so cache forever.
     let web_assets = Router::new()
         .nest_service("/_app", ServeDir::new(&state.config.web_dir))
@@ -293,6 +321,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/admin/ai/config", get(ai_core::config))
         .route("/api/admin/ai/models", get(ai_core::models))
         .route("/api/admin/system-prompt", get(misc::system_prompt))
+        .route("/api/admin/codemode/tokens", get(codemode::token::list_tokens))
         .route("/api/uploads/{filename}", get(uploads::serve))
         // Reads.
         .route("/api/about", get(api::about))

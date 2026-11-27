@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FaCopy, FaKey, FaMagnifyingGlass, FaRotate, FaTrashCan } from 'react-icons/fa6';
 import { useAdminFeedback } from '@/app/components/admin/feedback/AdminFeedbackProvider';
-import { Badge, Field, Loading, PageHeader, Panel } from '@/app/components/admin/ui';
+import { Badge, EmptyState, Field, Loading, PageHeader, Panel } from '@/app/components/admin/ui';
 import '@/app/styles/admin-system.css';
 
 function ApiCodeBlock({ code, language = 'text' }) {
@@ -34,6 +34,8 @@ function ApiCodeBlock({ code, language = 'text' }) {
 
 const sections = [
     { id: 'token', label: 'API token' },
+    { id: 'codemode-tokens', label: 'Code Mode agent tokens' },
+    { id: 'codemode-api', label: 'Code Mode API', method: 'POST', path: '/api/codemode/*' },
     { id: 'create-blog', label: 'Create blog post', method: 'POST', path: '/api/blogs' },
     { id: 'upload-image', label: 'Upload image', method: 'POST', path: '/api/admin/images/upload' },
     { id: 'system-prompt', label: 'System prompt', method: 'GET', path: '/api/admin/system-prompt' },
@@ -41,6 +43,444 @@ const sections = [
     { id: 'examples', label: 'Examples' },
     { id: 'notes', label: 'Notes' },
 ];
+
+function getCodeModeTokenStatus(token, now = Date.now()) {
+    if (token?.revokedAt) return 'revoked';
+    if (token?.expiresAt) {
+        const expiresAtMs = new Date(token.expiresAt).getTime();
+        if (!Number.isNaN(expiresAtMs) && expiresAtMs <= now) return 'expired';
+    }
+    return 'active';
+}
+
+function formatTokenDate(value, fallback = '—') {
+    if (!value) return fallback;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function CodeModeTokensPanel() {
+    const { confirm } = useAdminFeedback();
+    const [tokens, setTokens] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
+    const [actionError, setActionError] = useState('');
+    const [name, setName] = useState('');
+    const [nameError, setNameError] = useState('');
+    const [scope, setScope] = useState('read');
+    const [creating, setCreating] = useState(false);
+    const [revokingId, setRevokingId] = useState(null);
+    const [revealedToken, setRevealedToken] = useState(null);
+    const [copiedToken, setCopiedToken] = useState(false);
+
+    const fetchTokens = useCallback(async () => {
+        setLoading(true);
+        setLoadError('');
+        try {
+            const res = await fetch('/api/admin/codemode/tokens');
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.success || !Array.isArray(data.tokens)) {
+                throw new Error(data?.error || 'Failed to load Code Mode agent tokens.');
+            }
+            setTokens(data.tokens);
+        } catch (error) {
+            setLoadError(error?.message || 'Failed to load Code Mode agent tokens.');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchTokens();
+    }, [fetchTokens]);
+
+    const activeCount = useMemo(
+        () => tokens.filter((token) => getCodeModeTokenStatus(token) === 'active').length,
+        [tokens]
+    );
+
+    const handleCreate = async (event) => {
+        event.preventDefault();
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+            setNameError('Enter a name for this agent token.');
+            return;
+        }
+        setNameError('');
+        setActionError('');
+        setCreating(true);
+        setCopiedToken(false);
+
+        try {
+            const res = await fetch('/api/admin/codemode/tokens', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: trimmedName, scope }),
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.success || !data?.token) {
+                throw new Error(data?.error || 'Failed to create agent token.');
+            }
+
+            setRevealedToken({
+                id: data.item?.id ?? null,
+                token: data.token,
+                name: data.item?.name || trimmedName,
+                scope: data.item?.scope || scope,
+            });
+            setName('');
+            setScope('read');
+
+            if (data.item) {
+                setTokens((prev) => [data.item, ...prev.filter((item) => item.id !== data.item.id)]);
+            } else {
+                await fetchTokens();
+            }
+        } catch (error) {
+            setActionError(error?.message || 'Failed to create agent token.');
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const handleRevoke = async (token) => {
+        const confirmed = await confirm({
+            title: `Revoke "${token.name}"?`,
+            message:
+                'Any agent using this token will immediately lose access to POST /api/codemode/search and POST /api/codemode/execute.',
+            confirmText: 'Revoke',
+            danger: true,
+        });
+        if (!confirmed) return;
+
+        setActionError('');
+        setRevokingId(token.id);
+        try {
+            const res = await fetch(`/api/admin/codemode/tokens/${encodeURIComponent(token.id)}`, {
+                method: 'DELETE',
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok || !data?.success) {
+                throw new Error(data?.error || 'Failed to revoke agent token.');
+            }
+
+            const revokedAt = new Date().toISOString();
+            setTokens((prev) =>
+                prev.map((item) => (item.id === token.id ? { ...item, revokedAt } : item))
+            );
+            if (revealedToken?.id === token.id) {
+                setRevealedToken(null);
+            }
+        } catch (error) {
+            setActionError(error?.message || 'Failed to revoke agent token.');
+        } finally {
+            setRevokingId(null);
+        }
+    };
+
+    const handleCopyRevealed = async () => {
+        if (!revealedToken?.token) return;
+        try {
+            await navigator.clipboard.writeText(revealedToken.token);
+            setCopiedToken(true);
+            setTimeout(() => setCopiedToken(false), 1500);
+        } catch (error) {
+            console.error('Failed to copy agent token', error);
+            setActionError('Could not copy to clipboard. Copy the token manually.');
+        }
+    };
+
+    const renderStatusBadge = (status) => {
+        if (status === 'active') return <Badge tone="ok">active</Badge>;
+        if (status === 'expired') return <Badge tone="warn">expired</Badge>;
+        return <Badge tone="error">revoked</Badge>;
+    };
+
+    const renderScopeBadge = (tokenScope) => (
+        <Badge tone={tokenScope === 'write' ? 'warn' : 'info'}>{tokenScope}</Badge>
+    );
+
+    return (
+        <Panel
+            id="codemode-tokens"
+            title="Code Mode agent tokens"
+            className="scroll-mt-24"
+            actions={
+                !loading && !loadError ? (
+                    <Badge tone={activeCount > 0 ? 'ok' : undefined}>
+                        {activeCount} active
+                    </Badge>
+                ) : null
+            }
+        >
+            <div className="space-y-5">
+                <div className="space-y-3">
+                    <p className="adm-help">
+                        Issue short-lived bearer tokens for AI agents. Tokens expire automatically after{' '}
+                        <strong className="text-[var(--text-primary)]">30 days</strong> and work{' '}
+                        <strong className="text-[var(--text-primary)]">only</strong> on{' '}
+                        <code className="adm-code">POST /api/codemode/search</code> and{' '}
+                        <code className="adm-code">POST /api/codemode/execute</code> — they are rejected on
+                        all other routes.
+                    </p>
+
+                    <div className="adm-notice adm-notice-warn space-y-1">
+                        <p className="font-semibold text-[var(--text-bright)]">
+                            Data sharing &amp; prompt-injection notice
+                        </p>
+                        <p className="text-xs leading-relaxed">
+                            Agent tokens can read portfolio data including contact messages and visitor
+                            analytics, which will be sent to your AI model provider. Because external
+                            visitors write messages and referrer headers, untrusted content may contain
+                            prompt injections — prefer <code className="adm-code">read</code> scope unless
+                            write access is explicitly needed.
+                        </p>
+                    </div>
+                </div>
+
+                <form onSubmit={handleCreate} className="space-y-4" noValidate>
+                    <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,15rem)]">
+                        <Field
+                            label="Token name"
+                            help="A short label to identify which agent or workflow uses this token."
+                            error={nameError || undefined}
+                        >
+                            <input
+                                type="text"
+                                value={name}
+                                onChange={(e) => {
+                                    setName(e.target.value);
+                                    if (nameError) setNameError('');
+                                }}
+                                placeholder="e.g. Claude agent, Weekly audit"
+                                maxLength={80}
+                                disabled={creating}
+                                className="adm-input"
+                            />
+                        </Field>
+
+                        <Field
+                            label="Scope"
+                            help="Default is read-only."
+                        >
+                            <select
+                                value={scope}
+                                onChange={(e) => setScope(e.target.value)}
+                                disabled={creating}
+                                className="adm-input"
+                            >
+                                <option value="read">read (recommended)</option>
+                                <option value="write">write</option>
+                            </select>
+                        </Field>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="submit"
+                            disabled={creating}
+                            className="adm-btn adm-btn-primary"
+                        >
+                            {creating ? (
+                                <FaRotate aria-hidden="true" className="animate-spin" />
+                            ) : (
+                                <FaKey aria-hidden="true" />
+                            )}
+                            {creating ? 'Creating token' : 'Create agent token'}
+                        </button>
+                    </div>
+                </form>
+
+                {actionError && (
+                    <div role="alert" className="adm-notice adm-notice-error">
+                        {actionError}
+                    </div>
+                )}
+
+                {revealedToken && (
+                    <div
+                        role="status"
+                        className="adm-notice adm-notice-warn space-y-2.5"
+                    >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="font-semibold text-[var(--text-bright)]">
+                                Copy this token now — shown once
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-[var(--text-secondary)]">
+                                    {revealedToken.name}
+                                </span>
+                                {renderScopeBadge(revealedToken.scope)}
+                            </div>
+                        </div>
+                        <p className="text-xs text-[var(--text-secondary)]">
+                            Store it securely now. Once dismissed or reloaded, the full token cannot be
+                            recovered.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <code className="adm-code flex-1 break-all">{revealedToken.token}</code>
+                            <button
+                                type="button"
+                                onClick={handleCopyRevealed}
+                                className="adm-btn"
+                            >
+                                <FaCopy aria-hidden="true" />
+                                {copiedToken ? 'Copied' : 'Copy token'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setRevealedToken(null)}
+                                className="adm-btn adm-btn-quiet"
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {loading ? (
+                    <Loading label="Loading Code Mode agent tokens" rows={3} className="!p-0" />
+                ) : loadError ? (
+                    <div
+                        role="alert"
+                        className="adm-notice adm-notice-error flex flex-wrap items-center justify-between gap-3"
+                    >
+                        <span>{loadError}</span>
+                        <button type="button" onClick={fetchTokens} className="adm-btn">
+                            <FaRotate aria-hidden="true" /> Retry
+                        </button>
+                    </div>
+                ) : tokens.length === 0 ? (
+                    <EmptyState
+                        className="rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)]"
+                        title="No Code Mode agent tokens yet"
+                        description="Create a token above to allow an AI agent to call /api/codemode/search and /api/codemode/execute."
+                    />
+                ) : (
+                    <>
+                        <div className="hidden md:block adm-table-wrap rounded-[10px] border border-[var(--hairline)]">
+                            <table className="adm-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Token</th>
+                                        <th>Scope</th>
+                                        <th>Created</th>
+                                        <th>Expires</th>
+                                        <th>Last used</th>
+                                        <th>Status</th>
+                                        <th className="text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {tokens.map((token) => {
+                                        const status = getCodeModeTokenStatus(token);
+                                        const isActive = status === 'active';
+                                        const isRevoking = revokingId === token.id;
+                                        return (
+                                            <tr key={token.id}>
+                                                <td className="font-medium text-[var(--text-bright)]">
+                                                    {token.name}
+                                                </td>
+                                                <td>
+                                                    <code className="adm-code whitespace-nowrap">
+                                                        aiyu_agent_…{token.lastFour || '****'}
+                                                    </code>
+                                                </td>
+                                                <td>{renderScopeBadge(token.scope)}</td>
+                                                <td className="text-xs text-[var(--text-secondary)] whitespace-nowrap">
+                                                    {formatTokenDate(token.createdAt)}
+                                                </td>
+                                                <td className="text-xs text-[var(--text-secondary)] whitespace-nowrap">
+                                                    {formatTokenDate(token.expiresAt)}
+                                                </td>
+                                                <td className="text-xs text-[var(--text-secondary)] whitespace-nowrap">
+                                                    {formatTokenDate(token.lastUsedAt, 'Never')}
+                                                </td>
+                                                <td>{renderStatusBadge(status)}</td>
+                                                <td className="text-right">
+                                                    {isActive ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRevoke(token)}
+                                                            disabled={isRevoking}
+                                                            className="adm-btn adm-btn-danger"
+                                                        >
+                                                            <FaTrashCan aria-hidden="true" />
+                                                            {isRevoking ? 'Revoking' : 'Revoke'}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-xs text-[var(--adm-hint)]">—</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <ul className="adm-list md:hidden rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)]">
+                            {tokens.map((token) => {
+                                const status = getCodeModeTokenStatus(token);
+                                const isActive = status === 'active';
+                                const isRevoking = revokingId === token.id;
+                                return (
+                                    <li key={token.id} className="p-4 space-y-3">
+                                        <div className="flex flex-wrap items-start justify-between gap-2">
+                                            <div className="min-w-0 space-y-1">
+                                                <p className="font-semibold text-[var(--text-bright)] break-words">
+                                                    {token.name}
+                                                </p>
+                                                <code className="adm-code inline-block">
+                                                    aiyu_agent_…{token.lastFour || '****'}
+                                                </code>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                {renderScopeBadge(token.scope)}
+                                                {renderStatusBadge(status)}
+                                            </div>
+                                        </div>
+
+                                        <dl className="adm-facts">
+                                            <div>
+                                                <dt>Created</dt>
+                                                <dd>{formatTokenDate(token.createdAt)}</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Expires</dt>
+                                                <dd>{formatTokenDate(token.expiresAt)}</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Last used</dt>
+                                                <dd>{formatTokenDate(token.lastUsedAt, 'Never')}</dd>
+                                            </div>
+                                        </dl>
+
+                                        {isActive && (
+                                            <div className="pt-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRevoke(token)}
+                                                    disabled={isRevoking}
+                                                    className="adm-btn adm-btn-danger w-full sm:w-auto"
+                                                >
+                                                    <FaTrashCan aria-hidden="true" />
+                                                    {isRevoking ? 'Revoking' : 'Revoke'}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </>
+                )}
+            </div>
+        </Panel>
+    );
+}
 
 export default function AdminApiReferencePage() {
     const { confirm } = useAdminFeedback();
@@ -116,6 +556,27 @@ Website database context (JSON, indentation 2)
 # then use returned data.url in your /api/blogs request body`;
     const systemPromptCurl = `curl -X GET "http://localhost:3000/api/admin/system-prompt" \\
   -H "Cookie: token=<admin_session_token>"`;
+
+    const codeModeHeaders = `Authorization: Bearer aiyu_agent_<YOUR_AGENT_TOKEN>
+Content-Type: application/json`;
+    const codeModeSearchCurl = `curl -X POST "http://localhost:3000/api/codemode/search" \\
+  -H "Authorization: Bearer aiyu_agent_YOUR_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"code":"async () => Object.keys(codemode.spec().paths)"}'`;
+    const codeModeExecuteJs = `async () => {
+  const res = await codemode.request({
+    method: "GET",
+    path: "/api/blogs",
+    query: { all: "true" },
+  });
+  return (res.data || [])
+    .filter((post) => !post.published)
+    .map((post) => ({ id: post.id, title: post.title }));
+}`;
+    const codeModeExecuteCurl = `curl -X POST "http://localhost:3000/api/codemode/execute" \\
+  -H "Authorization: Bearer aiyu_agent_YOUR_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"code":"async () => (await codemode.request({ method: \\"GET\\", path: \\"/api/health\\" }))"}'`;
 
     // ── AI Hub · Sections ──
     const skillsShape = useMemo(
@@ -342,6 +803,113 @@ Website database context (JSON, indentation 2)
                                         )}
                                     </div>
                                 )}
+                            </div>
+                        </Panel>
+                    )}
+
+                    {matchesFilter(
+                        'codemode code mode agent token bearer search execute read write revoke'
+                    ) && <CodeModeTokensPanel />}
+
+                    {matchesFilter(
+                        'codemode code mode api search execute sandbox spec request upload limits curl js'
+                    ) && (
+                        <Panel
+                            id="codemode-api"
+                            title="Code Mode API"
+                            className="scroll-mt-24"
+                            actions={
+                                <div className="flex items-center gap-2">
+                                    <Badge tone="info">POST</Badge>
+                                    <code className="adm-code">/api/codemode/*</code>
+                                </div>
+                            }
+                        >
+                            <div className="space-y-4">
+                                <p className="adm-help">
+                                    Agents send an <code className="adm-code">async () =&gt; {'{ ... }'}</code>{' '}
+                                    JavaScript snippet in{' '}
+                                    <code className="adm-code">{'{ "code": "..." }'}</code> to inspect the
+                                    scope-filtered OpenAPI catalog or call allow-listed admin routes inside an
+                                    isolated sandbox. Full agent docs live at{' '}
+                                    <code className="adm-code">/.well-known/agent-skills/aiyu-codemode/SKILL.md</code>{' '}
+                                    and <code className="adm-code">/auth.md</code>.
+                                </p>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)] p-3 space-y-2">
+                                        <p className="font-semibold text-sm text-[var(--text-bright)]">
+                                            Endpoints &amp; sandbox globals
+                                        </p>
+                                        <ul className="space-y-1.5 text-xs text-[var(--text-secondary)]">
+                                            <li>
+                                                <code className="adm-code">POST /api/codemode/search</code> — exposes{' '}
+                                                <code className="adm-code">codemode.spec()</code> only.
+                                            </li>
+                                            <li>
+                                                <code className="adm-code">POST /api/codemode/execute</code> — exposes{' '}
+                                                <code className="adm-code">codemode.spec()</code>,{' '}
+                                                <code className="adm-code">
+                                                    codemode.request({'{ method, path, query, body }'})
+                                                </code>
+                                                , and (<code className="adm-code">write</code> scope){' '}
+                                                <code className="adm-code">
+                                                    codemode.upload({'{ name, type, base64 }'})
+                                                </code>
+                                                .
+                                            </li>
+                                            <li>
+                                                No <code className="adm-code">fetch</code>,{' '}
+                                                <code className="adm-code">process</code>,{' '}
+                                                <code className="adm-code">require</code>, filesystem, or timers.
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="rounded-[10px] border border-[var(--hairline)] bg-[var(--bg-primary)] p-3 space-y-2">
+                                        <p className="font-semibold text-sm text-[var(--text-bright)]">
+                                            Sandbox &amp; rate limits
+                                        </p>
+                                        <dl className="adm-facts">
+                                            <div>
+                                                <dt>Script / output</dt>
+                                                <dd>64 KB / 24,000 chars</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Time / RAM</dt>
+                                                <dd>30 s / 128 MB</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Requests / reply</dt>
+                                                <dd>50 per run / 2 MB</dd>
+                                            </div>
+                                            <div>
+                                                <dt>Concurrency / rate</dt>
+                                                <dd>2 concurrent / 30 min⁻¹ IP</dd>
+                                            </div>
+                                        </dl>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="adm-label mb-1.5">Headers</p>
+                                    <ApiCodeBlock language="http" code={codeModeHeaders} />
+                                </div>
+
+                                <div>
+                                    <p className="adm-label mb-1.5">Search catalog (cURL)</p>
+                                    <ApiCodeBlock language="bash" code={codeModeSearchCurl} />
+                                </div>
+
+                                <div>
+                                    <p className="adm-label mb-1.5">Execute script example (JS)</p>
+                                    <ApiCodeBlock language="javascript" code={codeModeExecuteJs} />
+                                </div>
+
+                                <div>
+                                    <p className="adm-label mb-1.5">Execute request (cURL)</p>
+                                    <ApiCodeBlock language="bash" code={codeModeExecuteCurl} />
+                                </div>
                             </div>
                         </Panel>
                     )}
