@@ -1148,7 +1148,8 @@ fn render(web: &WebApp, state: &AppState, path: &str, headers: &HeaderMap, site:
         .template
         .replacen("<!--app-head-->", &head, 1)
         .replacen("<!--app-data-->", &script_json(&data), 1)
-        .replacen(r#"<div id="root"></div>"#, &format!(r#"<div id="root">{fallback}</div>"#), 1);
+        // web/index.html hides [data-fallback] once JS runs, so visitors never see it unstyled; crawlers still read it.
+        .replacen(r#"<div id="root"></div>"#, &format!(r#"<div id="root"><div data-fallback>{fallback}</div></div>"#), 1);
     let mut res = Response::new(Body::from(html));
     *res.status_mut() = status;
     let h = res.headers_mut();

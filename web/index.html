@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#111827" />
     <!--app-head-->
+    <!-- Hide the server's crawler HTML in #root before first paint when JS runs; React replaces it on mount. -->
+    <style>html.js [data-fallback]{display:none}</style>
+    <script>document.documentElement.classList.add('js')</script>
     <script>/*prepaint-theme-perf*/</script>
     <script>/*prepaint-boot-gate*/</script>
   </head>
