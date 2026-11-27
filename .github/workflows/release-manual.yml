@@ -22,11 +22,31 @@ name: Release PR + Deploy After Merge
 # to that version's existing GitHub Release. It does NOT open a PR, does NOT
 # bump the version, and does NOT match the !fix marker above, so the normal
 # release/deploy jobs stay dormant for a hotfix push.
+#
+# MANUAL run (Actions tab, or `gh workflow run release-manual.yml`):
+# builds and pushes the image for the package.json version (or the `version`
+# input) and publishes the GitHub Release. It deploys ONLY when `deploy` is true,
+# so a release that needs manual steps on the host can be rolled out by hand.
+#   gh workflow run release-manual.yml -f deploy=false
+#   gh workflow run release-manual.yml -f deploy=true
+# No release PR is opened and the hotfix jobs do not run.
 
 on:
   push:
     branches:
       - master
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to the server after the image is pushed'
+        type: boolean
+        required: true
+        default: false
+      version:
+        description: 'Version to release (X.Y.Z). Empty = package.json version'
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -35,11 +55,11 @@ permissions:
   attestations: write
   id-token: write
 
-# Serialize release runs on master so two quick pushes never build/deploy on top
-# of each other. cancel-in-progress is intentionally false: an in-flight Docker
+# Serialize all release runs (push or manual) so two of them never build/deploy
+# on top of each other. cancel-in-progress is intentionally false: an in-flight Docker
 # push or SSH deploy must finish rather than be killed mid-way.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
   cancel-in-progress: false
 
 jobs:
@@ -48,6 +68,7 @@ jobs:
     # Runs on every push to master. Proceeds only when a pushed commit's SUBJECT
     # starts with a release marker (!major / !feat / !fix); otherwise
     # should_release=false and every release-PR step is skipped.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       should_release: ${{ steps.bump.outputs.should_release }}
@@ -312,11 +333,13 @@ jobs:
           echo "pull_request_operation=${{ steps.cpr.outputs.pull-request-operation }}"
           echo "Release PR includes version updates in package.json, CHANGELOG.md, and .release-please-manifest.json."
 
-  detect-release-merge:
-    name: Detect Merged Release Commit
-    if: github.event_name == 'push'
+  # Decides whether to publish a release (a merged release PR, or a manual run)
+  # and whether to deploy it.
+  resolve-release:
+    name: Resolve Release
     runs-on: ubuntu-latest
     outputs:
+      should_release: ${{ steps.detect.outputs.should_release }}
       should_deploy: ${{ steps.detect.outputs.should_deploy }}
       version: ${{ steps.detect.outputs.version }}
 
@@ -326,16 +349,38 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Detect if push is from merged release PR
+      - name: Detect release (merged release PR or manual run)
         id: detect
         env:
+          EVENT_NAME: ${{ github.event_name }}
           HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          INPUT_DEPLOY: ${{ inputs.deploy }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           python - <<'PY'
           import json
           import os
           import re
           import subprocess
+
+          def package_version():
+              with open("package.json", "r", encoding="utf-8") as f:
+                  return json.load(f).get("version", "").strip()
+
+          def emit(should_release, should_deploy, version):
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as f:
+                  f.write(f"should_release={'true' if should_release else 'false'}\n")
+                  f.write(f"should_deploy={'true' if should_deploy else 'false'}\n")
+                  f.write(f"version={version}\n")
+              print(f"should_release={should_release} should_deploy={should_deploy} version={version}")
+
+          if os.environ.get("EVENT_NAME") == "workflow_dispatch":
+              wanted = os.environ.get("INPUT_VERSION", "").strip().removeprefix("v")
+              wanted = wanted or package_version()
+              if not re.fullmatch(r"\d+\.\d+\.\d+", wanted):
+                  raise SystemExit(f"Invalid version '{wanted}'. Expected X.Y.Z.")
+              emit(True, os.environ.get("INPUT_DEPLOY") == "true", f"v{wanted}")
+              raise SystemExit(0)
 
           commit_message = os.environ.get("HEAD_COMMIT_MESSAGE", "").strip()
           release_merge_match = re.match(
@@ -359,37 +404,29 @@ jobs:
               and "package.json" in changed_files
           )
 
-          should_deploy = "true" if (release_merge_match or release_files_match) else "false"
+          merged = bool(release_merge_match or release_files_match)
 
           if release_merge_match:
               version = f"v{release_merge_match.group(1)}"
-          elif should_deploy == "true":
-              with open("package.json", "r", encoding="utf-8") as f:
-                  package_version = json.load(f).get("version", "").strip()
-              version = f"v{package_version}" if package_version else ""
+          elif merged:
+              current = package_version()
+              version = f"v{current}" if current else ""
           else:
               version = ""
 
-          output_file = os.environ["GITHUB_OUTPUT"]
-          with open(output_file, "a", encoding="utf-8") as f:
-              f.write(f"should_deploy={should_deploy}\n")
-              f.write(f"version={version}\n")
-
           print(f"Commit message: {commit_message}")
           print(f"Release files match: {release_files_match}")
-          print(f"should_deploy={should_deploy}")
-          if version:
-              print(f"version={version}")
+          emit(merged, merged, version)
           PY
 
       - name: Skip reason
-        if: steps.detect.outputs.should_deploy != 'true'
-        run: echo "Push is not from a merged release PR; deployment skipped."
+        if: steps.detect.outputs.should_release != 'true'
+        run: echo "Push is not from a merged release PR; release skipped."
 
   push-to-docker-hub:
     name: Push Docker image to Docker Hub
-    needs: detect-release-merge
-    if: github.event_name == 'push' && needs.detect-release-merge.outputs.should_deploy == 'true'
+    needs: resolve-release
+    if: needs.resolve-release.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -400,13 +437,6 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
-
-      - name: Get version
-        id: get-version
-        run: |
-          VERSION="${{ needs.detect-release-merge.outputs.version }}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Docker image will be tagged with: $VERSION"
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -420,7 +450,7 @@ jobs:
         with:
           images: aiyuayaan/aiyu
           tags: |
-            type=raw,value=${{ steps.get-version.outputs.version }}
+            type=raw,value=${{ needs.resolve-release.outputs.version }}
             type=raw,value=latest
 
       - name: Build and push Docker image
@@ -442,20 +472,13 @@ jobs:
 
   deploy:
     name: Deploy to Server
-    needs: [detect-release-merge, push-to-docker-hub]
-    if: github.event_name == 'push' && needs.detect-release-merge.outputs.should_deploy == 'true'
+    needs: [resolve-release, push-to-docker-hub]
+    if: needs.resolve-release.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Get version
-        id: get-version
-        run: |
-          VERSION="${{ needs.detect-release-merge.outputs.version }}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Deploying version: $VERSION"
 
       # Ship the repo's deployment config to the server so docker-compose.yml and
       # nginx.conf on the host always match the released commit. Files land in a
@@ -568,8 +591,13 @@ jobs:
 
   create-release:
     name: Create GitHub Release
-    needs: [detect-release-merge, push-to-docker-hub]
-    if: github.event_name == 'push' && needs.detect-release-merge.outputs.should_deploy == 'true'
+    needs: [resolve-release, push-to-docker-hub, deploy]
+    # Runs when the image was pushed and the deploy succeeded or was not asked
+    # for; a failed deploy does not publish a release.
+    if: >-
+      !cancelled() &&
+      needs.push-to-docker-hub.result == 'success' &&
+      (needs.deploy.result == 'success' || needs.deploy.result == 'skipped')
     runs-on: ubuntu-latest
 
     steps:
@@ -578,17 +606,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get version
-        id: get-version
-        run: |
-          VERSION="${{ needs.detect-release-merge.outputs.version }}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Creating release: $VERSION"
-
       - name: Extract release notes from CHANGELOG
         id: notes
         env:
-          RELEASE_VERSION: ${{ needs.detect-release-merge.outputs.version }}
+          RELEASE_VERSION: ${{ needs.resolve-release.outputs.version }}
         run: |
           python - <<'PY'
           import os
@@ -618,15 +639,16 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.get-version.outputs.version }}
-          name: Release ${{ steps.get-version.outputs.version }}
+          tag_name: ${{ needs.resolve-release.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Release ${{ needs.resolve-release.outputs.version }}
           generate_release_notes: true
           body: |
-            **Docker Image:** `aiyuayaan/aiyu:${{ steps.get-version.outputs.version }}`
+            **Docker Image:** `aiyuayaan/aiyu:${{ needs.resolve-release.outputs.version }}`
 
             ### Deployment Status
             - ✅ Docker image pushed to Docker Hub
-            - ✅ Server successfully deployed
+            - ${{ needs.deploy.result == 'success' && '✅ Server successfully deployed' || '⏸️ Server deploy skipped' }}
 
             ${{ steps.notes.outputs.notes }}
 

@@ -19,6 +19,7 @@
   "enabledPlugins": {
     "brag@brag": true,
     "ponytail@ponytail": true,
-    "seo-audit-kit@anthropic-plugin-directory": true
+    "seo-audit-kit@anthropic-plugin-directory": true,
+    "claude-seo@agricidaniel-claude-seo": true
   }
 }
