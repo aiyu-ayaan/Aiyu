@@ -5,6 +5,13 @@
 ### Bug Fixes
 
 * Stop the crawler HTML from flashing unstyled before the page loads
+* Give each games page its own canonical URL and heading instead of pointing at the home page
+* Stop robots.txt from blocking the redirecting /blog/ and /deployments/ paths
+* Redirect renamed project and app slugs to their new address
+* Follow or replace blog canonicals that point at missing posts; keep canonical duplicates out of the sitemap
+* Put the page name first in titles and tell apps and projects with the same name apart
+* Cut meta descriptions to 160 characters of plain text
+* Use ISO dates, real word counts and an author URL in blog structured data; add og:image to the blog index and legal pages
 
 ## [7.0.0](https://github.com/aiyu-ayaan/Aiyu/compare/v6.1.0...v7.0.0) (2026-11-27)
 
