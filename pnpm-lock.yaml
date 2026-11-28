@@ -278,8 +278,8 @@ importers:
         specifier: ^4.0.1
         version: 4.0.1(supports-color@7.2.0)
       simple-icons:
-        specifier: ^16.25.0
-        version: 16.25.0
+        specifier: ^16.38.1
+        version: 16.38.1
       three:
         specifier: ^0.185.1
         version: 0.185.1
@@ -2730,8 +2730,8 @@ packages:
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
 
-  simple-icons@16.25.0:
-    resolution: {integrity: sha512-ReYPfbqjkTBovxjerHw2tf6E1rQdaCqNJKaJbd78Mui8w+78xQlE1aDO/2ekID++n8qa+1t+oaueYLeiSoQsIA==}
+  simple-icons@16.38.1:
+    resolution: {integrity: sha512-q4JnGp1cgeASp4jzEsmSh/7BD/e2y7aYO8XST+QBEvOJ5wzZ/9WRmKsI+QUwkfPUSiXC+sfh2+QetD38zl3N0g==}
     engines: {node: '>=0.12.18'}
 
   source-map-js@1.2.2:
@@ -5809,7 +5809,7 @@ snapshots:
 
   siginfo@2.0.0: {}
 
-  simple-icons@16.25.0: {}
+  simple-icons@16.38.1: {}
 
   source-map-js@1.2.2: {}
 
